@@ -1,0 +1,45 @@
+[module]
+id = __opapp_identifier()
+name = Resilienzfragebogen (RS-13)
+short_description = Psychische Widerstandskraft
+version = __opapp_version()
+type = patient
+
+[description]
+Mit dem Resilienzfragebogen (RS-13) wird die die psychische Widerstandskraft; die Fähigkeit, schwierige Lebenssituationen ohne anhaltende Beeinträchtigung zu überstehen erfasst.
+
+[developer]
+first_name = Nora
+last_name = Schönenberger
+github_user = schoenenb
+email = nora.schoenenberger@suedhang.ch
+company = Suedhang
+phone = +41 (0)31 828 14 92
+website = http://suedhang.ch/de/Forschung
+
+
+[template Resilienz 6 12]
+<h1>Resilienzfragebogen (RS-13)</h1>
+<p>Under construction</p>
+
+
+[readme]
+__opapp_include(readme.md)
+
+[dependencies]
+
+
+[survey]
+id = rs13_ng
+type = ng
+responsibility = lead_therapist
+name = Resilienzfragebogen (RS-13)
+host = default
+
+[survey_markup rs13_ng]
+__opapp_include(survey_markups/rs13.html)
+
+
+
+[calculation rs13_score javascript]
+__opapp_include(calculations/rs13_score.js)
