@@ -24,7 +24,7 @@ website = http://suedhang.ch/de/Forschung
 
 
 [readme]
-__opapp_include(readme.md)
+__opapp_include(README.md)
 
 [dependencies]
 
