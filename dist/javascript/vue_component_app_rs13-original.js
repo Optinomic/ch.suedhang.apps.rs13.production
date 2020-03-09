@@ -10,6 +10,9 @@ Vue.component('app-rs13', {
         <div style="margin-bottom:24px;">
             <h2 class="font-weight-light">Resilienz</h2>
             <v-divider></v-divider>
+            <div>
+                <p>App-Content</p>
+            </div>
         </div>
     `
 });

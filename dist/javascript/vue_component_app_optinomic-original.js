@@ -21,6 +21,21 @@ Vue.component('app-optinomic', {
             } else {
                 return this.$store.state.sr;
             };
+        },
+        missing_data () {
+            // get survey_response
+            if (this.$store.state.sr === null) {
+                return false;
+            } else {
+                var sr = this.$store.state.sr.data;
+                var data_errors = false;
+                sr.forEach(function(item){
+                    if (item.all_found === false) {
+                        data_errors = true;    
+                    };
+                });
+                return data_errors;
+            };
         }
     },
     template: `
@@ -29,10 +44,14 @@ Vue.component('app-optinomic', {
                 <v-container>
                     <app-title :subtitle="subtitle" :title="title"></app-title>
                     <div v-if="sr.have_data">
+                        <div v-if="missing_data" class="mb-2">
+                            <h2 class="font-weight-light">Hinweis</h2>
+                            <v-divider></v-divider>
+                        </div> 
                         <div v-for="r in sr.data">
                             <div v-if="r.all_found === false">
                                 <v-alert dense outlined text type="error" dismissible>
-                                    <p style="margin:0;padding:0">Nicht alle Daten vorhanden:</p>
+                                    <p style="margin:0;padding:0">Bei der Messung vom <span v-html="formatDateCH(r.date)"></span> sind nicht alle Daten vorhanden:</p>
                                     <p style="margin:0;padding:0" v-if="r.calculation_found === false">
                                         - Calculation nicht gefunden / noch nicht berechnet!
                                     </p>
@@ -48,13 +67,13 @@ Vue.component('app-optinomic', {
                                 </v-alert>
                             </div>
                         </div>
+                        <slot></slot>
                     </div>
                     <div v-else>
                         <v-alert prominent text type="error" dismissible>
                             Keine Daten vorhanden.
                         </v-alert>
                     </div>
-                    <slot></slot>
                 </v-container>
             </v-content>
         </v-app>
