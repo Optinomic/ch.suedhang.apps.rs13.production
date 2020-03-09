@@ -41,7 +41,7 @@ name = Resilienzfragebogen (RS-13)
 host = default
 
 [survey_markup rs13_ng]
-__opapp_include(dist/survey_markups/rs13.html)
+__opapp_include(dist/survey_markup/rs13.html)
 
 
 [calculation rs13_score javascript]
