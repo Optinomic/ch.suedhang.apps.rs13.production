@@ -50,7 +50,7 @@ Vue.component('app-optinomic', {
                         </div> 
                         <div v-for="r in sr.data">
                             <div v-if="r.all_found === false">
-                                <v-alert dense outlined text type="error" dismissible>
+                                <v-alert dense outlined text type="error">
                                     <p style="margin:0;padding:0">Bei der Messung vom <span v-html="formatDateCH(r.date)"></span> sind nicht alle Daten vorhanden:</p>
                                     <p style="margin:0;padding:0" v-if="r.calculation_found === false">
                                         - Calculation nicht gefunden / noch nicht berechnet!
@@ -70,7 +70,7 @@ Vue.component('app-optinomic', {
                         <slot></slot>
                     </div>
                     <div v-else>
-                        <v-alert prominent text type="error" dismissible>
+                        <v-alert prominent text type="error">
                             Keine Daten vorhanden.
                         </v-alert>
                     </div>

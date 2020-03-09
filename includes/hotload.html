@@ -77,6 +77,21 @@ Vue.component('app-optinomic', {
             } else {
                 return this.$store.state.sr;
             };
+        },
+        missing_data () {
+            // get survey_response
+            if (this.$store.state.sr === null) {
+                return false;
+            } else {
+                var sr = this.$store.state.sr.data;
+                var data_errors = false;
+                sr.forEach(function(item){
+                    if (item.all_found === false) {
+                        data_errors = true;    
+                    };
+                });
+                return data_errors;
+            };
         }
     },
     template: `
@@ -85,10 +100,14 @@ Vue.component('app-optinomic', {
                 <v-container>
                     <app-title :subtitle="subtitle" :title="title"></app-title>
                     <div v-if="sr.have_data">
+                        <div v-if="missing_data" class="mb-2">
+                            <h2 class="font-weight-light">Hinweis</h2>
+                            <v-divider></v-divider>
+                        </div> 
                         <div v-for="r in sr.data">
                             <div v-if="r.all_found === false">
                                 <v-alert dense outlined text type="error" dismissible>
-                                    <p style="margin:0;padding:0">Nicht alle Daten vorhanden:</p>
+                                    <p style="margin:0;padding:0">Bei der Messung vom <span v-html="formatDateCH(r.date)"></span> sind nicht alle Daten vorhanden:</p>
                                     <p style="margin:0;padding:0" v-if="r.calculation_found === false">
                                         - Calculation nicht gefunden / noch nicht berechnet!
                                     </p>
@@ -104,20 +123,21 @@ Vue.component('app-optinomic', {
                                 </v-alert>
                             </div>
                         </div>
+                        <slot></slot>
                     </div>
                     <div v-else>
                         <v-alert prominent text type="error" dismissible>
                             Keine Daten vorhanden.
                         </v-alert>
                     </div>
-                    <slot></slot>
                 </v-container>
             </v-content>
         </v-app>
     `
 });
 
-// Optinomic App-Header
+
+// Optinomic App-Title
 Vue.component('app-title', {
     props: {
         title: {
@@ -135,7 +155,7 @@ Vue.component('app-title', {
     computed: {
         readme_html () {
             if (this.$store.state.current_app === null) {
-                return '<h1>Loading</h1>'
+                return null;
             } else {
                 return this.$store.state.current_app.module.readme.html;
             };
@@ -143,20 +163,35 @@ Vue.component('app-title', {
     },
     template: `
         <div style="margin-bottom:24px;">
-        <h1 v-html="title" class="display-2 font-weight-thin"></h1>
-        <p v-html="subtitle" style="margin-left:3px"></p>
-         <v-divider></v-divider>
-        
-        <v-expansion-panels flat light tile>
-            <v-expansion-panel>
-                <v-expansion-panel-header style="padding:0">
-                    <h3 class="font-weight-light">Dokumentation (Readme)</h3>
-                </v-expansion-panel-header>
-                <v-expansion-panel-content>
-                    <div v-html="readme_html"></div>
-                </v-expansion-panel-content>
-            </v-expansion-panel>
-        </v-expansion-panels>
+            <h1 v-html="title" class="display-1 font-weight-thin"></h1>
+            <p v-html="subtitle" style="margin-left:3px"></p>
+            <v-divider></v-divider>
+ 
+            <v-expansion-panels flat light tile v-if="readme_html === null">
+                <v-expansion-panel disabled>
+                    <v-expansion-panel-header style="padding:0">
+                        <v-skeleton-loader
+                            class=""
+                            min-width="200"
+                            max-width="550"
+                            type="heading"
+                        ></v-skeleton-loader>
+                    </v-expansion-panel-header>
+                </v-expansion-panel>
+            </v-expansion-panels>
+
+            <v-expansion-panels flat light tile v-if="readme_html !== null">
+                <v-expansion-panel>
+                    <v-expansion-panel-header style="padding:0">
+                        <h2 class="font-weight-light">Dokumentation (Readme)</h2>
+                    </v-expansion-panel-header>
+                    <v-expansion-panel-content>
+                        <div v-html="readme_html"></div>
+                    </v-expansion-panel-content>
+                </v-expansion-panel>
+            </v-expansion-panels>
+            
+            <v-divider></v-divider>
         </div>
     `
 });
