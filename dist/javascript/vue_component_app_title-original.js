@@ -27,24 +27,18 @@ Vue.component('app-title', {
             <h1 v-html="title" class="display-1 font-weight-thin"></h1>
             <p v-html="subtitle" style="margin-left:3px"></p>
             <v-divider></v-divider>
- 
             <v-expansion-panels flat light tile v-if="readme_html === null">
                 <v-expansion-panel disabled>
                     <v-expansion-panel-header style="padding:0">
-                        <v-skeleton-loader
-                            class=""
-                            min-width="200"
-                            max-width="550"
-                            type="heading"
-                        ></v-skeleton-loader>
+                        <v-skeleton-loader class="" min-width="200" max-width="550" type="heading"></v-skeleton-loader>
                     </v-expansion-panel-header>
                 </v-expansion-panel>
             </v-expansion-panels>
-
+        
             <v-expansion-panels flat light tile v-if="readme_html !== null">
                 <v-expansion-panel>
                     <v-expansion-panel-header style="padding:0">
-                        <h2 class="font-weight-light">Dokumentation (Readme)</h2>
+                        <h3 class="font-weight-light">Dokumentation (Readme)</h3>
                     </v-expansion-panel-header>
                     <v-expansion-panel-content>
                         <div v-html="readme_html"></div>
