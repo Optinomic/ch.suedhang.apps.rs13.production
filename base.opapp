@@ -26,6 +26,7 @@ __opapp_include(dist/templates/rs13.html)
 // Components
 __opapp_include(dist/javascript/vue_component_app_rs13.js)
 __opapp_include(dist/javascript/vue_component_app_title.js)
+__opapp_include(dist/javascript/vue_component_app_pdfmake.js)
 __opapp_include(dist/javascript/vue_component_app_optinomic.js)
 // App Init
 __opapp_include(dist/javascript/vue_init.js)
@@ -34,6 +35,7 @@ __opapp_include(dist/javascript/vue_init.js)
 
 [javascript]
 __opapp_include(dist/javascript/helpers.js)
+__opapp_include(dist/javascript/optinomic_makepdf.js)
 
 
 [readme]
