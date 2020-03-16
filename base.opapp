@@ -22,6 +22,7 @@ website = http://suedhang.ch/de/Forschung
 
 [template Start 6 6]
 __opapp_include(dist/templates/rs13.html)
+__opapp_include(dist/templates/optinomic_polymer_components.html)
 <script>
 // Components
 __opapp_include(dist/javascript/vue_component_app_rs13.js)
