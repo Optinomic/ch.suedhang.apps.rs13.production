@@ -73,13 +73,12 @@ Vue.component('optinomic-pdfmake', {
             
             dd.content = this.content;
             dd = makepdf._addFooter(dd, this.footerLeft, this.hidePageNumbers);
-            consol
-            e.log('PDF | download :: ' + this.doc_title, dd);
+            console.log('PDF | download :: ' + this.doc_title, dd);
             pdfMake.createPdf(dd).download(doc_title);
         }
     },
     template: `
-        <div style="margin-bottom:24px;">
+        <div>
             <v-container fluid>
                 <v-row>
                     <v-col cols="12">
@@ -97,7 +96,6 @@ Vue.component('optinomic-pdfmake', {
                             
                         </v-row>
                     </v-col>
-
                 </v-row>
             </v-container>
         </div>

@@ -46,7 +46,7 @@ The patient-app `ch.suedhang.apps.rs13.production` is currently HOTLOADED!
     <meta content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,minimal-ui" name="viewport">
 </head>
 <div id="optinomic_app">
-    <app-optinomic title="Resilienzfragebogen" subtitle="Psychische Wiederstandskraft">
+    <app-optinomic title="Resilienzfragebogen (RS-13)" subtitle="Psychische Wiederstandskraft">
         <app-rs13></app-rs13>
     </app-optinomic>
 </div>
@@ -2188,17 +2188,15 @@ Vue.component('app-optinomic', {
         }
     },
     template: `
+    <template>
         <v-app>
             <v-content>
                 <v-container>
-                    <app-title :subtitle="subtitle" :title="title"></app-title>
+                    <app-title :title="title" :subtitle="subtitle" class="mt-4"></app-title>
 
-                    <div v-if="loaded">
+                    <div v-if="loaded && sr.have_data">
                         <div v-if="sr.have_data">
-                            <div v-if="missing_data" class="mb-2">
-                                <h2 class="font-weight-light">Hinweis</h2>
-                                <v-divider></v-divider>
-                            </div>
+                            <optinomic-content-block title="Hinweis" subtitle="Daten" id="data_note" v-if="missing_data">
                             <div v-for="r in sr.data">
                                 <div v-if="r.all_found === false">
                                     <v-alert dense outlined text type="error">
@@ -2219,6 +2217,7 @@ Vue.component('app-optinomic', {
                                     </v-alert>
                                 </div>
                             </div>
+                            </optinomic-content-block>
                             <slot></slot>
                         </div>
                         <div v-else>
@@ -2235,6 +2234,7 @@ Vue.component('app-optinomic', {
                 </v-container>
             </v-content>
         </v-app>
+        </template>
     `
 });
 
@@ -2264,10 +2264,10 @@ Vue.component('app-title', {
         }
     },
     template: `
-        <div style="margin-bottom:24px;">
+        <div>
             <h1 v-html="title" class="display-1 font-weight-thin"></h1>
-            <p v-html="subtitle" style="margin-left:3px"></p>
-            <v-divider></v-divider>
+            <p v-html="subtitle" style="margin-left:3px; color:#8b0042"></p>
+            <v-divider light></v-divider>
             <v-expansion-panels flat light tile v-if="readme_html === null">
                 <v-expansion-panel disabled>
                     <v-expansion-panel-header style="padding:0">
@@ -2278,15 +2278,16 @@ Vue.component('app-title', {
         
             <v-expansion-panels flat light tile v-if="readme_html !== null">
                 <v-expansion-panel>
-                    <v-expansion-panel-header style="padding:0">
-                        <h3 class="font-weight-light">Dokumentation (Readme)</h3>
+                    <v-expansion-panel-header style="margin:0; padding:0; max-height: 72px;">
+                        <optinomic-content-block title="Dokumentation" subtitle="Readme" id="id_readme"></optinomic-content-block>
                     </v-expansion-panel-header>
-                    <v-expansion-panel-content>
-                        <div v-html="readme_html"></div>
+                    <v-expansion-panel-content style="margin:0; padding:0;">
+                        <div class="mt-8" v-html="readme_html"></div>
+                        <v-divider></v-divider>
                     </v-expansion-panel-content>
                 </v-expansion-panel>
             </v-expansion-panels>
-            <v-divider></v-divider>
+            
         </div>
     `
 });
@@ -2359,7 +2360,7 @@ Vue.component('optinomic-pdfmake', {
 
             console.log('PDF | open :: ' + this.doc_title, dd);
             
-            console.warn(JSON.stringify(dd, null, 2));
+            // console.warn(JSON.stringify(dd, null, 2));
             
             pdfMake.createPdf(dd).open();
         },
@@ -2375,7 +2376,7 @@ Vue.component('optinomic-pdfmake', {
         }
     },
     template: `
-        <div style="margin-bottom:24px;">
+        <div>
             <v-container fluid>
                 <v-row>
                     <v-col cols="12">
@@ -2422,12 +2423,105 @@ Vue.component('optinomic-content-block', {
     },
     template: `
         <div class="mt-10 mb-10" :id="id">
-            <p class="overline" style="margin-left:1px" v-html="subtitle"></p>
+            <p class="overline" style="margin-left:1px;color:#8b0042" v-html="subtitle"></p>
             <h2 class="headline font-weight-light text--secondary" v-html="title" style="margin-top:-22px"></h2>
             <v-divider></v-divider>
             <div class="mt-4 mb-4">
                 <slot></slot>
             </div>
+        </div>
+    `
+});
+
+// optinomic-data-table
+Vue.component('optinomic-data-table', {
+    props: {
+        rows: {
+            type: Array,
+            default: []
+        }
+    },
+    data() {
+        return {
+            headers: [{
+                    text: 'Variable',
+                    value: 'variable'
+                },
+                {
+                    text: 'Frage | Item',
+                    align: 'start',
+                    value: 'name',
+                }
+            ]
+        }
+    },
+    methods: {
+        flattenObject: function (ob) {
+            var toReturn = {};
+            try {
+                for (var i in ob) {
+                    if (!ob.hasOwnProperty(i)) continue;
+
+                    if ((typeof ob[i]) == 'object' && ob[i] !== null) {
+                        var flatObject = this.flattenObject(ob[i]);
+                        for (var x in flatObject) {
+                            if (!flatObject.hasOwnProperty(x)) continue;
+                            toReturn[i + '.' + x] = flatObject[x];
+                        }
+                    } else {
+                        toReturn[i] = ob[i];
+                    }
+                }
+            } catch (e) {
+                // Anweisungen für jeden Fehler
+                logMyErrors(e); // Fehler-Objekt an die Error-Funktion geben
+            }
+            return toReturn;
+        }
+    },
+    computed: {
+        rows_extended() {
+            try {
+                var new_rows = this.rows.slice();
+                var sr = this.$store.state.sr.data;
+                var sr_pushed = -99;
+
+                if ((new_rows.length > 0) && (sr.length > 0)) {
+                    sr.forEach(function (item, item_index) {
+                        new_rows.forEach(function (row, row_index) {
+
+                            var r_flat = this.flattenObject(item);
+                            var computed_variablename = r_flat.event_id + '__measurment';
+                            var new_header = {
+                                text: formatDateCH(r_flat.date),
+                                value: computed_variablename
+                            };
+                            if (sr_pushed !== item_index) {
+                                this.headers.push(new_header);
+                                sr_pushed = item_index;
+                            };
+                            row[computed_variablename] = r_flat[row.path];
+                        }.bind(this));
+                    }.bind(this));
+                };
+                return new_rows;
+            } catch (e) {
+                console.error('rows_extended', e);
+                return this.rows;
+            }
+        }
+    },
+    template: `
+        <div>
+            <v-data-table
+              :headers="headers"
+              :items="rows_extended"
+              :items-per-page="rows.length"
+              hide-default-footer
+              dense
+              class="elevation-1"
+            ></v-data-table>
+            </optinomic-content-block>
         </div>
     `
 });
@@ -2438,6 +2532,13 @@ Vue.component('app-rs13', {
     created() {},
     data: function () {
         return {
+            "base_config": {
+                "dist_root": "dist",
+                "app_id": "ch.suedhang.apps.rs13.production",
+                "app_name": "Resilienzfragebogen (RS-13)",
+                "app_short_description": "Psychische Widerstandskraft",
+                "app_type": "patient"
+            },
             "pdf_content": [],
             "options": {
                 "min": 0,
@@ -2485,7 +2586,110 @@ Vue.component('app-rs13', {
                 "interpretation_de": "hohe Widerstandskraft (Resilienz)",
                 "text": "Hoch",
                 "color": "#4CAF50"
-            }]
+            }],
+            "data_table": {
+                "rows": [{
+                        name: 'Wenn ich Pläne habe, verfolge ich sie auch.',
+                        variable: 'rs13_01',
+                        path: 'response.rs13_01'
+                    },
+                    {
+                        name: 'Normalerweise schaffe ich alles irgendwie.',
+                        variable: 'rs13_02',
+                        path: 'response.rs13_02'
+                    },
+                    {
+                        name: 'Ich lasse mich nicht so schnell aus der Bahn werfen.',
+                        variable: 'rs13_03',
+                        path: 'response.rs13_03'
+                    },
+                    {
+                        name: 'Ich mag mich.',
+                        variable: 'rs13_04',
+                        path: 'response.rs13_04'
+                    },
+                    {
+                        name: 'Ich kann mehrere Dinge gleichzeitig bewältigen.',
+                        variable: 'rs13_05',
+                        path: 'response.rs13_05'
+                    },
+                    {
+                        name: 'Ich bin entschlossen.',
+                        variable: 'rs13_06',
+                        path: 'response.rs13_06'
+                    },
+                    {
+                        name: 'Ich nehme die Dinge wie sie kommen.',
+                        variable: 'rs13_07',
+                        path: 'response.rs13_07'
+                    },
+                    {
+                        name: 'Ich behalte an vielen Dingen Interesse.',
+                        variable: 'rs13_08',
+                        path: 'response.rs13_08'
+                    },
+                    {
+                        name: 'Normalerweise kann ich eine Situation aus mehreren Perspektiven betrachten.',
+                        variable: 'rs13_09',
+                        path: 'response.rs13_09'
+                    },
+                    {
+                        name: 'Ich kann mich auch überwinden, Dinge zu tun, die ich eigentlich nicht machen will.',
+                        variable: 'rs13_10',
+                        path: 'response.rs13_10'
+                    },
+                    {
+                        name: 'Wenn ich in einer schwierigen Situation bin, finde ich gewöhnlich einen Weg heraus.',
+                        variable: 'rs13_11',
+                        path: 'response.rs13_11'
+                    },
+                    {
+                        name: 'In mir steckt genügend Energie, um alles zu machen, was ich machen muss.',
+                        variable: 'rs13_12',
+                        path: 'response.rs13_12'
+                    },
+                    {
+                        name: 'Ich kann es akzeptieren, wenn mich nicht alle Leute mögen.',
+                        variable: 'rs13_13',
+                        path: 'response.rs13_13'
+                    },
+                    {
+                        name: 'Resilienz Summenscore',
+                        variable: 'rs13_score',
+                        path: 'calculation.resilienz_score.rs13_score'
+                    }
+                ]
+            }
+        }
+    },
+    methods: {
+        getTitle: function (r) {
+            var ret_string = "Erfassung";
+            console.log(r)
+            try {
+                if (r.calculation_found) {
+                    const name = r.calculation.resilienz_score.range.interpretation_de;
+                    const nameCapitalized = name.charAt(0).toUpperCase() + name.slice(1)
+                    ret_string = nameCapitalized;
+                }
+            } catch (e) {
+                // Anweisungen für jeden Fehler
+                logMyErrors(e); // Fehler-Objekt an die Error-Funktion geben
+            }
+            return ret_string;
+        },
+        getSubtitle: function (r) {
+            var ret_string = "::";
+            try {
+                ret_string = formatDateCH(r.date);
+                if (r.calculation_found) {
+                    ret_string = ret_string + " | ∑ Resilienz-Summenscore: " + r.calculation.resilienz_score.rs13_score;
+                }
+            } catch (e) {
+                // Anweisungen für jeden Fehler
+                logMyErrors(e); // Fehler-Objekt an die Error-Funktion geben
+            }
+            return ret_string;
         }
     },
     computed: {
@@ -2535,14 +2739,13 @@ Vue.component('app-rs13', {
             // return data
             try {
                 if (this.$store.state.sr.data.length) {
-                    
+
                     var pdf = [];
 
-                    pdf.push(makepdf._suedhang_logo_anschrift());
+                    // pdf.push(makepdf._suedhang_logo_anschrift());
 
-                    var title = makepdf._title("Psychische Wiederstandskraft", "Resilienzfragebogen (RS-13)");
+                    var title = makepdf._title(this.base_config.app_short_description, this.base_config.app_name);
                     pdf.push(title);
-
 
                     if (this.$store.state.sr.data.length > 0) {
 
@@ -2563,13 +2766,10 @@ Vue.component('app-rs13', {
                                 pdf.push(makepdf._noData("Resilienz", "Calculation noch nicht berechnet.", 6));
                             };
                         }.bind(this));
-                        
                         // pdf.push(makepdf._stamp(this.patient_secure, 6));
-
                     } else {
                         pdf.push(makepdf._noData("Resilienz", "Keine Daten vorhanden", 6));
                     };
-
 
                     this.pdf_content = pdf;
                     return true;
@@ -2584,46 +2784,40 @@ Vue.component('app-rs13', {
         }
     },
     template: `
-        <div>
-            <optinomic-content-block :title="sr_count_text" subtitle="Daten" id="id_erfassungen"></optinomic-content-block>
-
-            <div style="margin-bottom:24px;">
-            
-            
-
-                <v-card class="mx-auto" outlined v-for="sr in sr_data" :key="sr.event_id">
-                    <v-card-text v-if="sr.calculation_found">
-                        <div class="overline">
-                            <span>∑</span> Resilienz-Summenscore: 
-                            <span v-html="sr.calculation.resilienz_score.rs13_score"></span>
-                        </div>
-                        <p class="headline text--primary" v-html="formatDateCH(sr.date)"></p>
-
-                        <p class="overline">Auswertung / Interpretation</p>
-                        <div class="text--primary body-1 mb-4" v-html="sr.calculation.resilienz_score.interpretation"></div>
-                        <optinomic-chart-profile v-bind:options="JSON.stringify(options)" v-bind:scales="JSON.stringify(scales)" v-bind:ranges="JSON.stringify(ranges)" v-bind:scores="JSON.stringify(sr_full)"></optinomic-chart-profile>
-                        
-                    </v-card-text>
-                    <v-card-text v-else>
-                        <div>Resilienz</div>
-                        <p class="display-1 text--primary" v-html="formatDateCH(sr.date)">
-                        </p>
-                        <p>Hinweis</p>
-                        <div class="text--primary">
-                            Calculation noch nicht berechnet.
-                        </div>
-                    </v-card-text>
-                </v-card>
+    <div>
+        <optinomic-content-block :title="getTitle(sr)" :subtitle="getSubtitle(sr)" id="id_erfassungen" v-for="sr in sr_data"
+            :key="sr.event_id">
+    
+            <div v-if="sr.calculation_found">
+                <p class="overline">Auswertung / Interpretation</p>
+                <div class="text--primary body-1 mb-4" v-html="sr.calculation.resilienz_score.interpretation"></div>
+                <optinomic-chart-profile style="border-top:1px solid #fafafa;border-bottom:1px solid #fafafa;" v-bind:options="JSON.stringify(options)" v-bind:scales="JSON.stringify(scales)"
+                    v-bind:ranges="JSON.stringify(ranges)" v-bind:scores="JSON.stringify(sr_full)">
+                </optinomic-chart-profile>
             </div>
-            <div style="margin-bottom:24px;" v-if="pdf_ready">
-                <h3 class="font-weight-light">Druckvorlage (PDF)</h3>
-                <v-divider></v-divider>
-                <optinomic-pdfmake :header-left="patient_secure" footer-left="Resilienz" header-right="Klinik Südhang" document-title="Resilienz" :content="pdf_content" hide-logo></optinomic-pdfmake>
+            <div v-else>
+                <div>Resilienz</div>
+                <p class="display-1 text--primary" v-html="formatDateCH(sr.date)">
+                </p>
+                <p>Hinweis</p>
+                <div class="text--primary">
+                    Calculation noch nicht berechnet.
+                </div>
             </div>
-        </div>
+            
+        </optinomic-content-block>
+
+        <optinomic-content-block title="Daten" subtitle="Tabelle" id="id_data">
+            <optinomic-data-table :rows="data_table.rows"></optinomic-data-table>
+        </optinomic-content-block>  
+    
+        <optinomic-content-block title="Druckvorlage" subtitle="PDF" id="id_pdf" v-if="pdf_ready">
+            <optinomic-pdfmake :header-left="patient_secure" footer-left="Resilienz" header-right="Klinik Südhang"
+                document-title="Resilienz" :content="pdf_content" hide-logo></optinomic-pdfmake>
+        </optinomic-content-block>
+    </div>
     `
 });
-
 
 
 

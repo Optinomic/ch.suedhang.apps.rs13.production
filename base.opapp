@@ -21,17 +21,8 @@ website = http://suedhang.ch/de/Forschung
 
 
 [template Start 6 6]
+__opapp_include(dist/includes/vue_template_includes.html)
 __opapp_include(dist/templates/rs13.html)
-__opapp_include(dist/templates/optinomic_polymer_components.html)
-<script>
-// Components
-__opapp_include(dist/javascript/vue_component_app_rs13.js)
-__opapp_include(dist/javascript/vue_component_app_title.js)
-__opapp_include(dist/javascript/vue_component_app_pdfmake.js)
-__opapp_include(dist/javascript/vue_component_app_optinomic.js)
-// App Init
-__opapp_include(dist/javascript/vue_init.js)
-</script>
 
 
 [javascript]
@@ -43,7 +34,6 @@ __opapp_include(dist/javascript/optinomic_makepdf.js)
 __opapp_include(README.md)
 
 
-
 [survey]
 id = rs13_ng
 type = ng
@@ -51,9 +41,11 @@ responsibility = lead_therapist
 name = Resilienzfragebogen (RS-13)
 host = default
 
+
 [survey_markup rs13_ng]
 __opapp_include(dist/survey_markup/rs13.html)
 
 
 [calculation resilienz_score javascript]
 __opapp_include(dist/calculations/rs13_score.js)
+
