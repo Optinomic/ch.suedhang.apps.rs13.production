@@ -25,11 +25,6 @@ __opapp_include(dist/templates/rs13.html)
 __opapp_include(dist/includes/vue_template_includes.html)
 
 
-[javascript]
-__opapp_include(dist/javascript/helpers.js)
-__opapp_include(dist/javascript/optinomic_makepdf.js)
-
-
 [readme]
 __opapp_include(README.md)
 
