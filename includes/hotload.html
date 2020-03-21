@@ -7,7 +7,8 @@ id = ch.suedhang.apps.rs13.production
 [dependencies]
 
 [description]
-Beschreibung der Applikation. Hinweis: Detaillierte Dokumentation der Applikation im Readme ablegen.
+Mit dem Resilienzfragebogen (RS-13) wird die die psychische Widerstandskraft; die Fähigkeit, schwierige Lebenssituationen ohne anhaltende Beeinträchtigung zu überstehen erfasst.
+
 
 [developer]
 first_name = Beat
@@ -31,8 +32,8 @@ Die Auswertung erfolgt über eine Addition der Punktwerte. Für die Interpretati
 67 - 72  =  Moderat    
 73 - 91  =  Hoch    
 
-### HOTLOADED: Resilienzfragebogen (RS-13)
-The patient-app `ch.suedhang.apps.rs13.production` is currently HOTLOADED!
+### Entwickler
+This patient-app `ch.suedhang.apps.rs13.production` is currently HOTLOADED!
 
 
 
@@ -2144,7 +2145,7 @@ Vue.component('app-optinomic', {
             default: "App"
         }
     },
-    created(){
+    created() {
         this.$store.dispatch('getSurveyResponses');
         this.$store.dispatch('getUser');
         if (helpers.getPatientID() !== 0) {
@@ -2153,7 +2154,7 @@ Vue.component('app-optinomic', {
         this.$store.dispatch('getClinic');
     },
     computed: {
-        sr () {
+        sr() {
             // get survey_response
             try {
                 return this.$store.state.sr;
@@ -2161,26 +2162,42 @@ Vue.component('app-optinomic', {
                 return {};
             };
         },
-        loaded () {
+        loaded() {
             // get survey_response
             try {
                 if ((this.$store.state.sr.have_data === true) || (this.$store.state.sr.have_data === false)) {
-                    return true;    
-                }
+                    return true;
+                };
             } catch (e) {
                 return false;
             };
         },
-        missing_data () {
+        user_text() {
+            // get survey_response
+            try {
+                return this.$store.state.user.data.first_name + " " + this.$store.state.user.data.last_name + " (" + this.$store.state.user.data.initials + ")";
+            } catch (e) {
+                return '';
+            };
+        },
+        clinic_data() {
+            // get survey_response
+            try {
+                return this.$store.state.clinic.data;
+            } catch (e) {
+                return false;
+            };
+        },
+        missing_data() {
             // get survey_response
             if (this.$store.state.sr === null) {
                 return false;
             } else {
                 var sr = this.$store.state.sr.data;
                 var data_errors = false;
-                sr.forEach(function(item){
+                sr.forEach(function (item) {
                     if (item.all_found === false) {
-                        data_errors = true;    
+                        data_errors = true;
                     };
                 });
                 return data_errors;
@@ -2189,48 +2206,58 @@ Vue.component('app-optinomic', {
     },
     template: `
     <template>
-        <v-app id="top">
+        <v-app id="top" style="background-color:#f8f8f8!important;">
             <v-content>
-                <v-container class="mt-10 mb-4 pt-8 pb-12 pl-10 pr-8 elevation-1">
-                
+                <v-container class="mt-10 mb-4 pt-8 pb-12 pl-10 pr-8 elevation-1" style="background-color:white!important;">
 
-                    <optinomic-toc></optinomic-toc>
-                    
-                
+                    <v-row>
+                        <v-col cols="12" sm="6">
+                            <img v-if="clinic_data" :src="clinic_data.clinic_logo" :alt="clinic_data.clinic_slogan"
+                                height="46">
+                            <v-skeleton-loader v-if="!clinic_data" height="46px" max-width="240px" type="image">
+                            </v-skeleton-loader>
+                        </v-col>
+                        <v-col cols="12" sm="6">
+                            <optinomic-toc></optinomic-toc>
+                        </v-col>
+                    </v-row>
+
                     <app-title :title="title" :subtitle="subtitle" class="mt-4"></app-title>
-                    
-                    
 
-                    <div v-if="loaded && sr.have_data">
+                    <div v-if="loaded">
                         <div v-if="sr.have_data">
-                            <optinomic-content-block title="Hinweis" subtitle="Daten" id="data_note" v-if="missing_data">
-                            <div v-for="r in sr.data">
-                                <div v-if="r.all_found === false">
-                                    <v-alert dense outlined text type="error">
-                                        <p style="margin:0;padding:0">Bei der Messung vom <span
-                                                v-html="formatDateCH(r.date)"></span> sind nicht alle Daten vorhanden:</p>
-                                        <p style="margin:0;padding:0" v-if="r.calculation_found === false">
-                                            - Calculation nicht gefunden / noch nicht berechnet!
-                                        </p>
-                                        <p style="margin:0;padding:0" v-if="r.event_found === false">
-                                            - Event <span v-html="r.event_id"></span> nicht gefunden.
-                                        </p>
-                                        <p style="margin:0;padding:0" v-if="r.patient_found === false">
-                                            - Patient <span v-html="r.patient_id"></span> nicht gefunden.
-                                        </p>
-                                        <p style="margin:0;padding:0" v-if="r.stay_found === false">
-                                            - Fall <span v-html="r.stay_id"></span> nicht gefunden.
-                                        </p>
-                                    </v-alert>
+                            <optinomic-content-block title="Missings" subtitle="Datenhinweis" id="data_note" 
+                                v-if="missing_data">
+                                <div v-for="r in sr.data">
+                                    <div v-if="r.all_found === false">
+                                        <v-alert dense outlined text type="error">
+                                            <p style="margin:0;padding:0">Bei der Messung vom <span
+                                                    v-html="formatDateCH(r.date)"></span> sind nicht alle Daten vorhanden:
+                                            </p>
+                                            <p style="margin:0;padding:0" v-if="r.calculation_found === false">
+                                                - Calculation nicht gefunden / noch nicht berechnet!
+                                            </p>
+                                            <p style="margin:0;padding:0" v-if="r.event_found === false">
+                                                - Event <span v-html="r.event_id"></span> nicht gefunden.
+                                            </p>
+                                            <p style="margin:0;padding:0" v-if="r.patient_found === false">
+                                                - Patient <span v-html="r.patient_id"></span> nicht gefunden.
+                                            </p>
+                                            <p style="margin:0;padding:0" v-if="r.stay_found === false">
+                                                - Fall <span v-html="r.stay_id"></span> nicht gefunden.
+                                            </p>
+                                        </v-alert>
+                                    </div>
                                 </div>
-                            </div>
                             </optinomic-content-block>
                             <slot></slot>
                         </div>
                         <div v-else>
-                            <v-alert prominent text type="error">
-                                Keine Daten vorhanden.
-                            </v-alert>
+                            <optinomic-content-block subtitle="Hinweis" title="Keine Messdaten" id="in_no_data" show_in_toc="false">
+                                <v-alert prominent text type="error">
+                                    Es sind keine Messdaten vorhanden.
+                                </v-alert>
+                            </optinomic-content-block>
                         </div>
                     </div>
                     <div v-else>
@@ -2238,12 +2265,27 @@ Vue.component('app-optinomic', {
                             <v-skeleton-loader class="mx-auto" type="card"></v-skeleton-loader>
                         </v-sheet>
                     </div>
+                    <div class="mt-12 pt-12 ml-4 mr-6">
+                        <v-row style="border-top: 1px solid #8b0042;">
+                            <v-col cols="12" sm="6" class="px-0">
+                                <p class="subtitle-1 font-italic font-weight-thin text-left" style="color:#8b0042"
+                                    v-text="clinic_data.clinic_slogan" v-if="clinic_data"></p>
+                            </v-col>
+                            <v-col cols="12" sm="6" class="px-0">
+                                <v-btn class="ml-1" style="float:right;" icon x-small color="#8b0042" @click="$vuetify.goTo('#top')">
+                                    <v-icon dark>mdi-arrow-up</v-icon>
+                                </v-btn>
+                                <p class="caption font-weight-light text-right" v-text="user_text"></p>
+                            </v-col>
+                        </v-row>
+                    </div>
                 </v-container>
             </v-content>
         </v-app>
-        </template>
+    </template>
     `
 });
+
 
 // Optinomic App-Title
 Vue.component('app-title', {
@@ -2257,15 +2299,37 @@ Vue.component('app-title', {
             default: "App"
         }
     },
-    created(){
+    created() {
         this.$store.dispatch('getApps');
     },
     computed: {
-        readme_html () {
-            if (this.$store.state.current_app === null) {
-                return null;
-            } else {
+        readme_html() {
+            try {
                 return this.$store.state.current_app.module.readme.html;
+            } catch (e) {
+                return null;
+            };
+        },
+        app_description() {
+            try {
+                return this.$store.state.current_app.module.description;
+            } catch (e) {
+                return null;
+            };
+        },
+        app_data() {
+            try {
+                return this.$store.state.current_app;
+            } catch (e) {
+                return null;
+            };
+        },
+        clinic_data() {
+            // get survey_response
+            try {
+                return this.$store.state.clinic.data;
+            } catch (e) {
+                return false;
             };
         },
         patient_text() {
@@ -2275,19 +2339,16 @@ Vue.component('app-title', {
                 return null;
             };
         }
-        
-        
     },
     template: `
         <div>
-        
-            <h1 v-html="title" class="display-1 font-weight-medium"></h1>
-            <p style="margin-left:3px;color:#8b0042"> 
+
+            <h1 v-text="title" class="display-1 font-weight-medium"></h1>
+            <p style="margin-left:1px;color:#8b0042">
                 <span v-text="subtitle"></span>
                 <span v-if="patient_text" class="mx-1" style="color:#616161">|</span>
                 <span v-if="patient_text" v-text="patient_text"></span>
             </p>
-            
 
             <optinomic-content-block title="Dokumentation" subtitle="Readme" id="id_readme">
                 <v-expansion-panels flat light tile v-if="readme_html === null">
@@ -2301,10 +2362,44 @@ Vue.component('app-title', {
                 <v-expansion-panels flat light tile v-if="readme_html !== null">
                     <v-expansion-panel>
                         <v-expansion-panel-header style="margin:0; padding:0;">
-                            <v-btn small outlined rounded color="#a1a1a1" class="mr-auto col-md-2">Anzeigen</v-btn>   
+                            <p class="text--primary body-1 mx-auto">
+                                <span v-text="app_description"></span>
+                                <span class="overline mx-2" style="color:#8b0042">[ </span>
+                                <span class="overline">Mehr</span>
+                                <span class="overline mx-2" style="color:#8b0042">]</span>
+                            </p>
                         </v-expansion-panel-header>
-                        <v-expansion-panel-content style="margin:0; padding:0;">
-                            <div class="mt-8" v-html="readme_html"></div>
+                        <v-expansion-panel-content class="mx-0 px-0" style="margin:0; padding:0;">
+                            <!-- Readme -->
+                            <div style="border-bottom: 1px solid #8b0042">&nbsp;</div>
+                            <p class="overline mt-1 pb-1" style="margin-left:1px;color:#8b0042">README.md</p>
+                            <div class="mt-2" v-html="readme_html"></div>
+                            <!-- Info-Table -->
+                            <div class="mt-6" style="border-bottom: 1px solid #8b0042">&nbsp;</div>
+                            <p class="overline mt-1 pb-1" style="margin-left:1px;color:#8b0042">Applikation - Info</p>
+                            <v-simple-table>
+                                <template v-slot:default>
+                                    <tbody>
+                                        <tr>
+                                            <td>Lizenz</td>
+                                            <td>
+                                                <a :href="clinic_data.clinic_www" target="_blank" v-text="clinic_data.clinic_name + ', ' + clinic_data.clinic_address"></a>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td>Administrator</td>
+                                            <td>
+                                                <a :href="'mailto:'+ clinic_data.admin_email" v-text="clinic_data.admin_name"></a>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td>Last Update, Identifier</td>
+                                            <td v-text="formatDateCH(app_data.module_activation.data.last_update)  + ', ' +  app_data.module.identifier">
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </template>
+                            </v-simple-table>
                             <v-divider></v-divider>
                         </v-expansion-panel-content>
                     </v-expansion-panel>
@@ -2429,13 +2524,18 @@ Vue.component('optinomic-content-block', {
             type: String,
             default: "id_undefined"
         },
+        show_in_toc: {
+            type: Boolean,
+            default: true
+        },
         toc_pushed: {
             type: Boolean,
             default: false
         }
     },
-    created(){
-        if (this.toc_pushed === false) {
+    data: () => ({}),
+    created() {
+        if ((this.toc_pushed === false) && (this.show_in_toc === true)) {
             var toc = this.$store.state.table_of_contents.slice(0);
             var toc_entry = {
                 title: this.title,
@@ -2450,20 +2550,18 @@ Vue.component('optinomic-content-block', {
                 root: 'table_of_contents',
                 data: toc
             });
-            // console.log("table_ofcontents", toc);
         };
     },
-    computed: {
-    },
+    computed: {},
     template: `
-        <div class="mt-12 mb-4" :id="id">
+        <div class="mb-6 pt-8" :id="id">
             <div class="d-flex flex-row justify-space-between align-end">
                 <div>
                     <p class="overline" style="margin-left:1px;color:#8b0042" v-html="subtitle"></p>
                     <h2 class="headline font-weight-light text--secondary" v-html="title" style="margin-top:-16px"></h2>
                 </div>
                 <div>
-                    <v-btn icon x-small color="grey" @click="$vuetify.goTo('#top')">
+                    <v-btn icon x-small color="#8b0042" @click="$vuetify.goTo('#top')">
                         <v-icon dark>mdi-arrow-up</v-icon>
                     </v-btn>
                 </div>
@@ -2484,7 +2582,7 @@ Vue.component('optinomic-toc', {
         toc_data() {
             // return data
             try {
-                console.log('TOC', this.$store.state.table_of_contents);
+                //console.log('TOC', this.$store.state.table_of_contents);
                 return this.$store.state.table_of_contents;
             } catch (e) {
                 return [];
@@ -2492,9 +2590,9 @@ Vue.component('optinomic-toc', {
         }
     },
     template: `
-        <div class="d-flex flex-row justify-end mr-12">
+        <div class="d-flex flex-row justify-start">
         
-            <div class="mb-12 mt-2 ml-1 mr-12">
+            <div class="mb-12 mt-2">
                 <div class="ml-5 mb-2">
                     <p class="overline" style="color:#8b0042">Table of Contents</p>
                     <h2 class="headline font-weight-light text--secondary" style="margin-top:-22px">Inhaltsverzeichnis</h2>
@@ -2605,6 +2703,69 @@ Vue.component('optinomic-data-table', {
               
             ></v-data-table>
             </optinomic-content-block>
+        </div>
+    `
+});
+
+// optinomic-clipboard-text
+Vue.component('optinomic-clipboard-text', {
+    props: {
+        text: {
+            type: String,
+            default: ""
+        }
+    },
+    data: () => ({
+        snackbar: false,
+        alert_text: '',
+        alert_color: 'error',
+        timeout: 2000,
+    }),
+    methods: {
+        copyClipboard() {
+            try {
+                let textToCopy = document.querySelector('#clipboard-text')
+                textToCopy.setAttribute('type', 'text')
+                textToCopy.select()
+
+                var successful = document.execCommand('copy');
+                if (successful) {
+                    this.alert_text = '✓ Erfolgreich in die Zwischenablage kopiert.';
+                    this.alert_color = 'success';
+                } else {
+                    this.alert_text = 'Oops, der Text konnte nicht in die Zwischenablage kopiert werden.';
+                };
+
+                /* unselect the range */
+                textToCopy.setAttribute('type', 'hidden')
+                window.getSelection().removeAllRanges()
+            } catch (err) {
+                this.alert_text = "Oops, kopieren in die Zwischenablage ist nicht möglich.";
+            }
+            this.snackbar = true;
+        },
+    },
+    computed: {},
+    template: `
+        <div>
+            <v-tooltip left>
+                <template v-slot:activator="{ on }">
+                    <span v-on="on" style="float:right;">
+                        <v-btn @click="copyClipboard" icon color="indigo">
+                            <v-icon>mdi-content-copy</v-icon>
+                        </v-btn>
+                    </span>
+                </template>
+                <span>Kopiere in die Zwischenablage.</span>
+            </v-tooltip>
+        
+            <p class="text--primary body-1" v-text="text">optinomic-clipboard-text</p>
+        
+            <input type="hidden" id="clipboard-text" :value="text">
+            
+            <v-snackbar v-model="snackbar" :timeout="timeout" :color="alert_color">
+                <span v-text="alert_text"></span>
+            </v-snackbar>
         </div>
     `
 });
@@ -2867,38 +3028,40 @@ Vue.component('app-rs13', {
         }
     },
     template: `
-    <div>
-        <optinomic-content-block :title="getTitle(sr)" :subtitle="getSubtitle(sr)" id="id_erfassungen" v-for="sr in sr_data"
-            :key="sr.event_id">
-    
-            <div v-if="sr.calculation_found">
-                <p class="overline">Auswertung / Interpretation</p>
-                <div class="text--primary body-1 mb-4" v-html="sr.calculation.resilienz_score.interpretation"></div>
-                <optinomic-chart-profile style="border-top:1px solid #fafafa;border-bottom:1px solid #fafafa;" v-bind:options="JSON.stringify(options)" v-bind:scales="JSON.stringify(scales)"
-                    v-bind:ranges="JSON.stringify(ranges)" v-bind:scores="JSON.stringify(sr_full)">
-                </optinomic-chart-profile>
-            </div>
-            <div v-else>
-                <div>Resilienz</div>
-                <p class="display-1 text--primary" v-html="formatDateCH(sr.date)">
-                </p>
-                <p>Hinweis</p>
-                <div class="text--primary">
-                    Calculation noch nicht berechnet.
-                </div>
-            </div>
-            
-        </optinomic-content-block>
+        <div>
+            <div v-for="sr in sr_data" :key="sr.event_id">
 
-        <optinomic-content-block :subtitle="sr_count_text" title="Datentabelle" id="id_data_table">
-            <optinomic-data-table :rows="data_table.rows"></optinomic-data-table>
-        </optinomic-content-block>  
-    
-        <optinomic-content-block title="Druckvorlage" subtitle="PDF" id="id_pdf" v-if="pdf_ready">
-            <optinomic-pdfmake :header-left="patient_secure" footer-left="Resilienz" header-right="Klinik Südhang"
-                document-title="Resilienz" :content="pdf_content" hide-logo></optinomic-pdfmake>
-        </optinomic-content-block>
-    </div>
+                <div v-if="sr.calculation_found">
+                    <optinomic-content-block :title="getTitle(sr)" :subtitle="getSubtitle(sr)" id="id_erfassungen">
+                        <p class="overline">Auswertung / Interpretation</p>
+                        <optinomic-clipboard-text :text="sr.calculation.resilienz_score.interpretation">
+                        </optinomic-clipboard-text>
+
+                        <optinomic-chart-profile style="border-top:1px solid #fafafa;border-bottom:1px solid #fafafa;"
+                            v-bind:options="JSON.stringify(options)" v-bind:scales="JSON.stringify(scales)"
+                            v-bind:ranges="JSON.stringify(ranges)" v-bind:scores="JSON.stringify(sr_full)">
+                        </optinomic-chart-profile>
+                    </optinomic-content-block>
+                </div>
+                <div v-else>
+                    <optinomic-content-block :title="'Erfassung vom ' + formatDateCH(sr.date)" subtitle="Hinweis zur" id="id_no_calculation">
+                        <v-alert prominent outlined text type="error">
+                            Calculation noch nicht berechnet.
+                        </v-alert>
+                    </optinomic-content-block>
+                </div>
+
+            </div>
+
+            <optinomic-content-block :subtitle="sr_count_text" title="Datentabelle" id="id_data_table">
+                <optinomic-data-table :rows="data_table.rows"></optinomic-data-table>
+            </optinomic-content-block>
+
+            <optinomic-content-block title="Druckvorlage" subtitle="PDF" id="id_pdf" v-if="pdf_ready">
+                <optinomic-pdfmake :header-left="patient_secure" footer-left="Resilienzfragebogen (RS-13)" header-right="Klinik Südhang"
+                    document-title="Resilienz" :content="pdf_content" hide-logo></optinomic-pdfmake>
+            </optinomic-content-block>
+        </div>
     `
 });
 
@@ -3534,6 +3697,5 @@ host = default
 
 [calculation resilienz_score javascript]
 function main(responses){var calc={roundToTwo:function(num){return+(Math.round(num+"e+2")+"e-2")},formatDateCH:function(date_string){if(null!==(date_string=date_string||null)){var year=parseInt(date_string.substring(0,4)),month=parseInt(date_string.substring(5,7));return parseInt(date_string.substring(8,10))+"."+month+"."+year}return null},getInterpretation:function(d,resp,score,range){var return_text="";return return_text="male"===d.patient.data.gender?"Herr "+d.patient.data.last_name:"Frau "+d.patient.data.last_name,return_text=(return_text=(return_text=(return_text+=" erreichte beim Resilienzfragebogen (RS-13) vom")+" "+calc.formatDateCH(resp.data.filled)+" ")+"einen Summenscore von "+score+", ")+"was auf eine "+range.interpretation_de+" hindeutet."},getResults:function(d){var allResults=[];return d.survey_responses.forEach(function(response,myindex){var myResults={rs13:{},rs13_score:0,interpretation:"",range:null,ranges:null},result=response.data.response;myResults.rs13.rs13_01=parseInt(result.rs13_01),myResults.rs13.rs13_02=parseInt(result.rs13_02),myResults.rs13.rs13_03=parseInt(result.rs13_03),myResults.rs13.rs13_04=parseInt(result.rs13_04),myResults.rs13.rs13_05=parseInt(result.rs13_05),myResults.rs13.rs13_06=parseInt(result.rs13_06),myResults.rs13.rs13_06=parseInt(result.rs13_06),myResults.rs13.rs13_07=parseInt(result.rs13_07),myResults.rs13.rs13_08=parseInt(result.rs13_08),myResults.rs13.rs13_09=parseInt(result.rs13_09),myResults.rs13.rs13_10=parseInt(result.rs13_10),myResults.rs13.rs13_11=parseInt(result.rs13_11),myResults.rs13.rs13_12=parseInt(result.rs13_12),myResults.rs13.rs13_13=parseInt(result.rs13_13),myResults.rs13_score=myResults.rs13.rs13_01+myResults.rs13.rs13_02+myResults.rs13.rs13_03+myResults.rs13.rs13_04+myResults.rs13.rs13_05+myResults.rs13.rs13_06+myResults.rs13.rs13_07+myResults.rs13.rs13_08+myResults.rs13.rs13_09+myResults.rs13.rs13_10+myResults.rs13.rs13_11+myResults.rs13.rs13_12+myResults.rs13.rs13_13;var current_range={},ranges=[{from:13,to:66,interpretation_de:"niedrige Widerstandskraft (Resilienz)",result_color:"#F44336"},{from:67,to:72,interpretation_de:"moderate Widerstandskraft (Resilienz)",result_color:"#FF9800"},{from:73,to:91,interpretation_de:"hohe Widerstandskraft (Resilienz)",result_color:"#4CAF50"}];current_range=ranges[0],myResults.rs13_score>=ranges[1].from&&(current_range=ranges[1]),myResults.rs13_score>=ranges[2].from&&(current_range=ranges[2]),myResults.range=current_range,myResults.ranges=ranges,myResults.interpretation=calc.getInterpretation(d,response,myResults.rs13_score,myResults.range),myResults.hash=result.optinomixHASH,myResults.response=response,allResults.push(myResults)}),allResults}};return calc.getResults(responses)}
-
 
 

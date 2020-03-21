@@ -22,6 +22,7 @@ website = http://suedhang.ch/de/Forschung
 
 [template Start 6 6]
 __opapp_include(dist/templates/rs13.html)
+__opapp_include(dist/javascript/vue_patient_app_rs13.js)
 __opapp_include(dist/includes/vue_template_includes.html)
 
 
