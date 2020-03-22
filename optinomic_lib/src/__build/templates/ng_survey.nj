@@ -1,3 +1,0 @@
-{#  ------- NG-Survey -------                -#}
-{#  This is a minimal NG-SURVEY - Template.  -#}
-{% block content %}{% endblock %}

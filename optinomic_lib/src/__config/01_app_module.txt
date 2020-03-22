@@ -1,5 +1,0 @@
-[module]
-name = {{app_name}}
-short_description = {{app_short_description}}
-type = {{app_type}}
-id = {{app_id}}

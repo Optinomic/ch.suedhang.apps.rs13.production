@@ -1,2 +1,0 @@
-[description]
-Beschreibung der Applikation. Hinweis: Detaillierte Dokumentation der Applikation im Readme ablegen.

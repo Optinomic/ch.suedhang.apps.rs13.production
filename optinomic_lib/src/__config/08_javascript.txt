@@ -1,2 +1,0 @@
-[javascript]
-__opapp_include(javascript/main.js)

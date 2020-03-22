@@ -1,2 +1,0 @@
-[template Start 6 6]
-__opapp_include(template/vue_template.html)

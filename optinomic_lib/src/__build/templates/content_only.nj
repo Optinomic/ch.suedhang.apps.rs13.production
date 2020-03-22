@@ -1,5 +1,0 @@
-{#  ------- Minimal -------                 -#}
-{#  This is a Content only Template - Template.  -#}
-<!-- START Content -->
-{% block content %}{% endblock %}
-<!-- END Content -->
