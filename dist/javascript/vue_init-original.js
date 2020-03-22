@@ -14,6 +14,9 @@ new Vue({
             clinic: null
         },
         mutations: {
+            increment(state) {
+                state.count++
+            },
             saveData(state, d) {
                 // console.error('state', d.root, d.data);
                 state[d.root] = d.data;
@@ -60,6 +63,9 @@ new Vue({
 
                 // Do async task
                 helpers.callAPI('GET', api_url, {}, {}, function (req) {
+                    
+                    
+
 
                     var app_id = helpers.getAppID();
 
@@ -128,12 +134,10 @@ new Vue({
                                         resp.patients.forEach(function (current_patient, patientID) {
                                             if (current_patient.id === return_obj.patient_id) {
                                                 return_obj.patient_found = true;
-
                                                 current_patient.data.id = current_patient.id;
                                                 current_patient.data.pid = current_patient.id;
-
-                                                current_patient.data = createPatientExtras(current_patient.data);
-                                                return_obj.patient = current_patient.data;
+                                                var current_patient_data = createPatientExtras(current_patient.data);
+                                                return_obj.patient = current_patient_data;
                                             };
                                         });
 
@@ -143,7 +147,6 @@ new Vue({
                                                 current_pum.data.id = current_pum.id;
                                                 return_obj.patient_uses_module = current_pum.data;
                                                 return_obj.stay_id = current_pum.data.stay_id;
-
                                             };
                                         });
                                     };
@@ -155,9 +158,8 @@ new Vue({
 
                                                 current_stay.data.id = current_stay.id;
                                                 current_stay.data.fid = current_stay.id;
-                                                current_stay.data = createStayExtras(current_stay.data);
-
-                                                return_obj.stay = current_stay.data;
+                                                var current_stay_data = createStayExtras(current_stay.data);
+                                                return_obj.stay = current_stay_data;
                                             };
                                         });
                                     };
@@ -586,6 +588,21 @@ new Vue({
 
                 });
 
+            },
+            myincrement({
+                commit
+            }) {
+
+                var api_url = 'clinic';
+
+                axios
+                    .get(helpers.getApiURL() + "clinic")
+                    .then(response => {
+                        console.log('RESP', response);
+                        commit('saveClinic', response);
+                        commit('increment');
+                    })
+                    .catch(error => console.log('Error: ' + api_url + ': ', error))
             }
         }
     }),

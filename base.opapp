@@ -21,7 +21,7 @@ website = http://suedhang.ch/de/Forschung
 
 
 [template Start 6 6]
-__opapp_include(dist/templates/rs13.html)
+__opapp_include(dist/templates/ch.suedhang.apps.rs13.production.html)
 
 [css]
 

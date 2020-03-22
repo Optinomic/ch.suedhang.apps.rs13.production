@@ -53,7 +53,6 @@ Vue.component('app-title', {
     },
     template: `
         <div>
-
             <h1 v-text="title" class="display-1 font-weight-medium"></h1>
             <p style="margin-left:1px;color:#8b0042">
                 <span v-text="subtitle"></span>
