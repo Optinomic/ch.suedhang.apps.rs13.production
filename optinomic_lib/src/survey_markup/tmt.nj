@@ -1,0 +1,7 @@
+{% extends "__build/templates/ng_survey.nj" %} 
+{% set current_survey = tmt_example %}
+
+{# --- Content-Section ---#}
+{% block content %}
+{% include "__build/survey_markup/builder.nj" %}
+{% endblock %}

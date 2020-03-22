@@ -1,0 +1,9 @@
+{% extends "__build/templates/vuetify.nj" %} 
+
+{# --- HEAD-Section ---#}
+{% block head %}
+{% endblock %} 
+
+{# --- Content-Section ---#}
+{% block content %}
+{% endblock %}
