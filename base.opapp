@@ -21,7 +21,7 @@ website = http://suedhang.ch/de/Forschung
 
 
 [template Start 6 6]
-__opapp_include(dist/templates/ch.suedhang.apps.rs13.production.html)
+__opapp_include(optinomic_lib/dist/templates/ch.suedhang.apps.rs13.production.html)
 
 [css]
 
@@ -38,9 +38,9 @@ host = default
 
 
 [survey_markup rs13_ng]
-__opapp_include(dist/survey_markup/rs13.html)
+__opapp_include(optinomic_lib/dist/survey_markup/rs13.html)
 
 
 [calculation resilienz_score javascript]
-__opapp_include(dist/calculations/rs13_score.js)
+__opapp_include(optinomic_lib/dist/calculations/rs13_score.js)
 
