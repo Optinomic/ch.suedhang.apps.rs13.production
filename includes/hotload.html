@@ -37,7 +37,7 @@ This patient-app `ch.suedhang.apps.rs13.production` is currently HOTLOADED!
 
 
 
-[template Start 6 6]
+[template Resilienz 6 6]
 
 <head>
     <meta content="Optinomic GmbH" name="author">
@@ -2207,8 +2207,8 @@ Vue.component('app-optinomic', {
     template: `
     <template>
         <v-app id="top" style="background-color:#f8f8f8!important;">
-            <v-content>
-                <v-container class="mt-10 mb-4 pt-8 pb-12 pl-10 pr-8 elevation-1" style="background-color:white!important;">
+            <v-content class="mb-12">
+                <v-container class="mt-10 mb-12 pt-8 pb-12 pl-10 pr-8 elevation-1" style="background-color:white!important;">
 
                     <v-row>
                         <v-col cols="12" sm="6">
@@ -2287,6 +2287,7 @@ Vue.component('app-optinomic', {
 });
 
 
+
 // Optinomic App-Title
 Vue.component('app-title', {
     props: {
@@ -2342,7 +2343,6 @@ Vue.component('app-title', {
     },
     template: `
         <div>
-
             <h1 v-text="title" class="display-1 font-weight-medium"></h1>
             <p style="margin-left:1px;color:#8b0042">
                 <span v-text="subtitle"></span>
@@ -2381,7 +2381,7 @@ Vue.component('app-title', {
                                 <template v-slot:default>
                                     <tbody>
                                         <tr>
-                                            <td>Lizenz</td>
+                                            <td>Licensed</td>
                                             <td>
                                                 <a :href="clinic_data.clinic_www" target="_blank" v-text="clinic_data.clinic_name + ', ' + clinic_data.clinic_address"></a>
                                             </td>
@@ -2393,8 +2393,9 @@ Vue.component('app-title', {
                                             </td>
                                         </tr>
                                         <tr>
-                                            <td>Last Update, Identifier</td>
-                                            <td v-text="formatDateCH(app_data.module_activation.data.last_update)  + ', ' +  app_data.module.identifier">
+                                            <td>Updated @ <span v-text="formatDateCH(app_data.module_activation.data.last_update)"></span></td>
+                                            <td>
+                                                <a :href="'https://github.com/Optinomic/' + app_data.module.identifier" target="_blank" v-text="app_data.module.identifier"></a>
                                             </td>
                                         </tr>
                                     </tbody>
@@ -2620,13 +2621,18 @@ Vue.component('optinomic-data-table', {
         rows: {
             type: Array,
             default: []
+        },
+        interpretations: {
+            type: Object,
+            default: {}
         }
     },
     data() {
         return {
             headers: [{
                     text: 'Variable',
-                    value: 'variable'
+                    value: 'variable',
+                    width: 20
                 },
                 {
                     text: 'Frage | Item',
@@ -2654,8 +2660,7 @@ Vue.component('optinomic-data-table', {
                     }
                 }
             } catch (e) {
-                // Anweisungen für jeden Fehler
-                logMyErrors(e); // Fehler-Objekt an die Error-Funktion geben
+                console.log('flattenObject', e);
             }
             return toReturn;
         }
@@ -2681,7 +2686,24 @@ Vue.component('optinomic-data-table', {
                                 this.headers.push(new_header);
                                 sr_pushed = item_index;
                             };
-                            row[computed_variablename] = r_flat[row.path];
+
+                            // Interpretation
+                            try {
+                                if (row.interpretation !== null) {
+                                    var current_interpretation = this.interpretations[row.interpretation].slice();
+
+                                    var value = r_flat[row.path];
+                                    current_interpretation.forEach(function (i) {
+                                        if ((i.value + '') === (value + '')) {
+                                            value = i.value + ', ' + i.text;    
+                                        };
+                                    }.bind(this));
+                                    row[computed_variablename] = value;
+                                };
+                            } catch (e) {
+                                row[computed_variablename] = r_flat[row.path];
+                            };
+
                         }.bind(this));
                     }.bind(this));
                 };
@@ -2700,8 +2722,12 @@ Vue.component('optinomic-data-table', {
               :items-per-page="rows.length"
               hide-default-footer
               dense
-              
-            ></v-data-table>
+            >
+                <template v-slot:item.variable="{ item }">
+                <kbd v-text="item.variable">v</kbd>
+
+                </template>
+            </v-data-table>
             </optinomic-content-block>
         </div>
     `
@@ -3066,8 +3092,6 @@ Vue.component('app-rs13', {
 });
 
 
-
-
 // Init Vue
 new Vue({
     el: '#optinomic_app',
@@ -3084,27 +3108,91 @@ new Vue({
             clinic: null
         },
         mutations: {
-            increment(state) {
-                state.count++
-            },
             saveData(state, d) {
-                // console.error('state', d.root, d.data);
-                state[d.root] = d.data;
-                console.warn('state :: ', new Date(), state);
+                try {
+                    // console.error('state', d.root, d.data);
+                    state[d.root] = d.data;
+                    console.warn('state :: ', new Date(), state);
+                } catch (err) {
+                    console.error('Error: saveData', err);
+                };
+            },
+            saveAppData(state, pl) {
+                var d = Object.assign({}, pl);
+                try {
+                    // console.log('=========>', d);
+                    state.data_apps.data_obj[d.root] = d.data;
+
+                    state.data_apps.base.forEach(function (app, appID) {
+
+                        if (app.app_id === d.root) {
+                            app.init = true;
+                            app = Object.assign(app, d.data);
+                        };
+
+                    });
+
+                    if (d.data.loaded === true) {
+                        state.data_apps.data_init_array.push(d.root);
+                    } else {
+                        state.data_apps.data_loaded_array.push(d.root);
+                        state.data_apps.count = state.data_apps.count + 1;
+                    };
+
+                    console.warn('state :: ', new Date(), state);
+                } catch (err) {
+                    console.error('Error: saveAppData', err);
+                };
             }
         },
         actions: {
             getSurveyResponses({
                 commit
-            }) {
+            }, params) {
+
+                if (params === undefined) {
+                    params = {};
+                };
+
+                var is_defined = function (val) {
+                    if ((val === undefined) || (val === null)) {
+                        return false;
+                    } else {
+                        return true;
+                    }
+                };
+
                 var module_identifier = helpers.getAppID();
                 var current_pid = parseInt(helpers.getPatientID());
-                var current_stay_id = parseInt(helpers.getStayID());
+                var current_stay_id = parseInt(helpers.getStayID());;
+                var store_root = 'sr';
+
+                try {
+                    if (is_defined(params.identifier)) {
+                        module_identifier = params.identifier;
+                    }
+
+                    if (is_defined(params.pid)) {
+                        current_pid = params.pid;
+                    }
+
+                    if (is_defined(params.sid)) {
+                        current_stay_id = params.sid;
+                    }
+
+                    if (is_defined(params.root)) {
+                        store_root = params.root;
+                    }
+                } catch (err) {
+                    // console.error('getSurveyResponses - Params', err);
+                };
+
 
                 var base_data = {
                     "date": new Date(),
                     "data": null,
                     "calculations_all": null,
+                    "loaded": false,
                     "have_data": false,
                     "possible_data": true,
                     "request": null,
@@ -3113,11 +3201,18 @@ new Vue({
                     "app_id": module_identifier
                 };
 
-                console.log('(?) getSurveyResponses', module_identifier, current_pid, current_stay_id);
+                console.log('(?) getSurveyResponses', module_identifier, current_pid, current_stay_id, store_root);
+
+
+                var savetype = 'saveData';
+                if (store_root !== 'sr') {
+                    savetype = 'saveAppData';
+                };
+
 
                 commit({
-                    type: 'saveData',
-                    root: 'sr',
+                    type: savetype,
+                    root: store_root,
                     data: base_data
                 });
 
@@ -3201,12 +3296,10 @@ new Vue({
                                         resp.patients.forEach(function (current_patient, patientID) {
                                             if (current_patient.id === return_obj.patient_id) {
                                                 return_obj.patient_found = true;
-
                                                 current_patient.data.id = current_patient.id;
                                                 current_patient.data.pid = current_patient.id;
-
-                                                current_patient.data = createPatientExtras(current_patient.data);
-                                                return_obj.patient = current_patient.data;
+                                                var current_patient_data = createPatientExtras(current_patient.data);
+                                                return_obj.patient = current_patient_data;
                                             };
                                         });
 
@@ -3216,7 +3309,6 @@ new Vue({
                                                 current_pum.data.id = current_pum.id;
                                                 return_obj.patient_uses_module = current_pum.data;
                                                 return_obj.stay_id = current_pum.data.stay_id;
-
                                             };
                                         });
                                     };
@@ -3228,9 +3320,8 @@ new Vue({
 
                                                 current_stay.data.id = current_stay.id;
                                                 current_stay.data.fid = current_stay.id;
-                                                current_stay.data = createStayExtras(current_stay.data);
-
-                                                return_obj.stay = current_stay.data;
+                                                var current_stay_data = createStayExtras(current_stay.data);
+                                                return_obj.stay = current_stay_data;
                                             };
                                         });
                                     };
@@ -3340,6 +3431,7 @@ new Vue({
                                     "data": return_array,
                                     "calculations_all": calculation_results,
                                     "have_data": have_data,
+                                    "loaded": true,
                                     "possible_data": true,
                                     "request": data_request,
                                     "pid": current_pid,
@@ -3350,8 +3442,8 @@ new Vue({
 
 
                                 commit({
-                                    type: 'saveData',
-                                    root: 'sr',
+                                    type: savetype,
+                                    root: store_root,
                                     data: response
                                 });
 
@@ -3659,21 +3751,6 @@ new Vue({
 
                 });
 
-            },
-            myincrement({
-                commit
-            }) {
-
-                var api_url = 'clinic';
-
-                axios
-                    .get(helpers.getApiURL() + "clinic")
-                    .then(response => {
-                        console.log('RESP', response);
-                        commit('saveClinic', response);
-                        commit('increment');
-                    })
-                    .catch(error => console.log('Error: ' + api_url + ': ', error))
             }
         }
     }),
@@ -3699,3 +3776,19 @@ host = default
 function main(responses){var calc={roundToTwo:function(num){return+(Math.round(num+"e+2")+"e-2")},formatDateCH:function(date_string){if(null!==(date_string=date_string||null)){var year=parseInt(date_string.substring(0,4)),month=parseInt(date_string.substring(5,7));return parseInt(date_string.substring(8,10))+"."+month+"."+year}return null},getInterpretation:function(d,resp,score,range){var return_text="";return return_text="male"===d.patient.data.gender?"Herr "+d.patient.data.last_name:"Frau "+d.patient.data.last_name,return_text=(return_text=(return_text=(return_text+=" erreichte beim Resilienzfragebogen (RS-13) vom")+" "+calc.formatDateCH(resp.data.filled)+" ")+"einen Summenscore von "+score+", ")+"was auf eine "+range.interpretation_de+" hindeutet."},getResults:function(d){var allResults=[];return d.survey_responses.forEach(function(response,myindex){var myResults={rs13:{},rs13_score:0,interpretation:"",range:null,ranges:null},result=response.data.response;myResults.rs13.rs13_01=parseInt(result.rs13_01),myResults.rs13.rs13_02=parseInt(result.rs13_02),myResults.rs13.rs13_03=parseInt(result.rs13_03),myResults.rs13.rs13_04=parseInt(result.rs13_04),myResults.rs13.rs13_05=parseInt(result.rs13_05),myResults.rs13.rs13_06=parseInt(result.rs13_06),myResults.rs13.rs13_06=parseInt(result.rs13_06),myResults.rs13.rs13_07=parseInt(result.rs13_07),myResults.rs13.rs13_08=parseInt(result.rs13_08),myResults.rs13.rs13_09=parseInt(result.rs13_09),myResults.rs13.rs13_10=parseInt(result.rs13_10),myResults.rs13.rs13_11=parseInt(result.rs13_11),myResults.rs13.rs13_12=parseInt(result.rs13_12),myResults.rs13.rs13_13=parseInt(result.rs13_13),myResults.rs13_score=myResults.rs13.rs13_01+myResults.rs13.rs13_02+myResults.rs13.rs13_03+myResults.rs13.rs13_04+myResults.rs13.rs13_05+myResults.rs13.rs13_06+myResults.rs13.rs13_07+myResults.rs13.rs13_08+myResults.rs13.rs13_09+myResults.rs13.rs13_10+myResults.rs13.rs13_11+myResults.rs13.rs13_12+myResults.rs13.rs13_13;var current_range={},ranges=[{from:13,to:66,interpretation_de:"niedrige Widerstandskraft (Resilienz)",result_color:"#F44336"},{from:67,to:72,interpretation_de:"moderate Widerstandskraft (Resilienz)",result_color:"#FF9800"},{from:73,to:91,interpretation_de:"hohe Widerstandskraft (Resilienz)",result_color:"#4CAF50"}];current_range=ranges[0],myResults.rs13_score>=ranges[1].from&&(current_range=ranges[1]),myResults.rs13_score>=ranges[2].from&&(current_range=ranges[2]),myResults.range=current_range,myResults.ranges=ranges,myResults.interpretation=calc.getInterpretation(d,response,myResults.rs13_score,myResults.range),myResults.hash=result.optinomixHASH,myResults.response=response,allResults.push(myResults)}),allResults}};return calc.getResults(responses)}
 
 
+[event activation]
+type = on_activation
+time = 08:00
+due_after = 259200
+overdue = ignore
+description = RS-13 Eintritt
+survey = rs13_ng
+ 
+[event exit]
+type = before_exit
+days = 10
+time = 08:00
+due_after = 259200
+overdue = ignore
+description = RS-13 Austritt
+survey = rs13_ng

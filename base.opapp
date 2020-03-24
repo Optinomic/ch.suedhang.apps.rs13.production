@@ -22,7 +22,7 @@ website = http://suedhang.ch/de/Forschung
 
 
 [template Resilienz 6 6]
-__opapp_include(optinomic_lib/dist/templates/ch.suedhang.apps.rs13.production.html)
+__opapp_include(optinomic_lib/dist/templates/ch.suedhang.apps.rs13.html)
 
 
 [readme]
@@ -39,3 +39,21 @@ host = default
 
 [survey_markup rs13_ng]
 __opapp_include(optinomic_lib/dist/survey_markup/rs13.html)
+
+
+[event activation]
+type = on_activation
+time = 08:00
+due_after = 259200
+overdue = ignore
+description = RS-13 Eintritt
+survey = rs13_ng
+ 
+[event exit]
+type = before_exit
+days = 10
+time = 08:00
+due_after = 259200
+overdue = ignore
+description = RS-13 Austritt
+survey = rs13_ng
