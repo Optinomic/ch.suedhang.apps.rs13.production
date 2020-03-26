@@ -7,7 +7,7 @@ version = __opapp_version()
 type = patient
 
 [description]
-Mit dem Resilienzfragebogen (RS-13) wird die die psychische Widerstandskraft also die Fähigkeit, schwierige Lebenssituationen ohne anhaltende Beeinträchtigung zu überstehen erfasst.
+Mit dem Resilienzfragebogen (RS-13) wird die die psychische Widerstandskraft; die Fähigkeit, schwierige Lebenssituationen ohne anhaltende Beeinträchtigung zu überstehen erfasst.
 
 [dependencies]
 
