@@ -21,24 +21,8 @@ phone = +41 (0)31 828 14 92
 website = http://suedhang.ch/de/Forschung
 
 
-[template Resilienz 6 6]
-__opapp_include(optinomic_lib/dist/templates/ch.suedhang.apps.rs13.html)
-
-
 [readme]
 __opapp_include(README.md)
-
-
-[survey]
-id = rs13_ng
-type = ng
-responsibility = patient_via_assessment
-name = Resilienzfragebogen (RS-13)
-host = default
-
-
-[survey_markup rs13_ng]
-__opapp_include(optinomic_lib/dist/survey_markup/rs13.html)
 
 
 [event activation]
