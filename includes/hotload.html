@@ -248,7 +248,7 @@ var makepdf = (function () {
 
         datum_str = y + "_" + m + "_" + t;
 
-        doc_name = doc_name + datum_str + " - " + title + " - " + left;
+        doc_name = doc_name + datum_str + " - " + title.replace(/\./g,'') + " - " + left.replace(/\./g,'');
         doc_name = doc_name + ".pdf";
 
         // console.log('doc_name', doc_name);
@@ -347,7 +347,7 @@ var makepdf = (function () {
         subtitle = subtitle === undefined ? "" : subtitle;
 
         return {
-            "id": "title",
+            "id": title + "_" + subtitle,
             "stack": [
                 // second column consists of paragraphs
                 {
@@ -414,7 +414,6 @@ var makepdf = (function () {
         text = text === undefined ? "Optinomic" : text;
 
         return {
-            "id": "text",
             "text": " " + text,
             "style": "p"
         };
@@ -425,7 +424,6 @@ var makepdf = (function () {
         text = text === undefined ? "Optinomic" : text;
 
         return {
-            "id": "caption",
             "text": text,
             "style": "caption"
         };
@@ -434,7 +432,6 @@ var makepdf = (function () {
     var _pageBreak = function (when) {
         when = when === undefined ? "after" : when;
         return {
-            "id": "peagebreak_" + when,
             "fontSize": 0,
             "text": "",
             "pageOrientation": "portrait",
@@ -451,7 +448,6 @@ var makepdf = (function () {
         var length = 514 / 100 * width;
 
         var return_obj = {
-            "id": "horizontal_line",
             "margin": [0, space, 0, 0],
             "canvas": [{
                 "type": "line",
@@ -470,7 +466,7 @@ var makepdf = (function () {
 
     var _noData = function (title, text, space) {
         title = title === undefined ? null : title;
-        text = text === undefined ? "Keine Daten vorhanden." : title;
+        text = text === undefined ? "Keine Daten vorhanden." : text;
         space = space === undefined ? 24 : space;
 
         var date = new Date();
@@ -481,7 +477,6 @@ var makepdf = (function () {
         };
 
         var no_data = {
-            "id": "no_data",
             "table": {
                 "widths": [24, "*"],
                 "body": [
@@ -1463,7 +1458,9 @@ var makepdf = (function () {
                 _inner.canvas.push(ks_line);
 
                 _return.stack.push(_inner);
-            } catch {};
+            } catch (e) {
+                // console.error('_pdf_chart_profile | _ks', e);
+            };
 
             return _return;
         };
@@ -2146,7 +2143,13 @@ Vue.component('app-optinomic', {
         }
     },
     created() {
-        this.$store.dispatch('getSurveyResponses');
+        var params = {
+            "identifier": helpers.getAppID(),
+            "root": helpers.getAppID()
+        };
+        this.$store.dispatch('getSurveyResponses', params);
+        this.$store.dispatch('getApps');
+
         if (helpers.getPatientID() !== 0) {
             this.$store.dispatch('getPatient');
             this.$store.dispatch('getPatientStays');
@@ -2157,9 +2160,9 @@ Vue.component('app-optinomic', {
     computed: {
         sr() {
             try {
-                return this.$store.state.sr;
+                return this.$store.state.data_apps.data_object[helpers.getAppID()];
             } catch (e) {
-                return {};
+                return [];
             };
         },
         isAdmin() {
@@ -2171,7 +2174,7 @@ Vue.component('app-optinomic', {
         },
         loaded() {
             try {
-                if (this.$store.state.sr.loaded === true) {
+                if (this.sr.loaded === true) {
                     return true;
                 } else {
                     return false;   
@@ -2197,7 +2200,6 @@ Vue.component('app-optinomic', {
         could_have_data() {
             try {
                 var ret_bool = false;
-
                 if (this.$store.state.current_app.module.surveys.length > 0) {
                     ret_bool = true;
                 }
@@ -2208,12 +2210,12 @@ Vue.component('app-optinomic', {
         },
         missing_data() {
             try {
-                if (this.$store.state.sr === null) {
+                if (this.sr === null) {
                     return false;
                 } else {
-                    var sr = this.$store.state.sr.data;
+                    var sr_data = this.sr.data;
                     var data_errors = false;
-                    sr.forEach(function (item) {
+                    sr_data.forEach(function (item) {
                         if (item.all_found === false) {
                             data_errors = true;
                         };
@@ -2377,9 +2379,6 @@ Vue.component('app-title', {
             default: "App"
         }
     },
-    created() {
-        this.$store.dispatch('getApps');
-    },
     computed: {
         readme_html() {
             try {
@@ -2458,21 +2457,21 @@ Vue.component('app-title', {
                                 <template v-slot:default>
                                     <tbody>
                                         <tr>
+                                            <td>App (updated @ <span v-text="formatDateCH(app_data.module_activation.data.last_update)"></span>)</td>
+                                            <td>
+                                                <a :href="'https://github.com/Optinomic/' + app_data.module.identifier" target="_blank" v-text="app_data.module.identifier"></a>
+                                            </td>
+                                        </tr>
+                                        <tr>
                                             <td>Licensed</td>
                                             <td>
                                                 <a :href="clinic_data.clinic_www" target="_blank" v-text="clinic_data.clinic_name + ', ' + clinic_data.clinic_address"></a>
                                             </td>
                                         </tr>
                                         <tr>
-                                            <td>Administrator</td>
+                                            <td>Support</td>
                                             <td>
                                                 <a :href="'mailto:'+ clinic_data.admin_email" v-text="clinic_data.admin_name"></a>
-                                            </td>
-                                        </tr>
-                                        <tr>
-                                            <td>Updated @ <span v-text="formatDateCH(app_data.module_activation.data.last_update)"></span></td>
-                                            <td>
-                                                <a :href="'https://github.com/Optinomic/' + app_data.module.identifier" target="_blank" v-text="app_data.module.identifier"></a>
                                             </td>
                                         </tr>
                                     </tbody>
@@ -2894,70 +2893,11 @@ Vue.component('app-rs13', {
     created() {},
     data: function () {
         return {
-            "base_config": {
-                "dist_root": "dist",
-                "app_id": "ch.suedhang.apps.rs13.production",
-                "app_name": "Resilienzfragebogen (RS-13)",
-                "app_short_description": "Psychische Widerstandskraft",
-                "app_type": "patient"
-            },
             "pdf_content": [],
-            "rs_13_chart": {
-                "options": {
-                    "min": 0,
-                    "max": 100,
-                    "item_height": 50,
-                    "item_text_left": 83,
-                    "item_text_right": 60,
-                    "color_skin": "indigo_grey_pink",
-                    "color_grid": "#9E9E9E",
-                    "color_clinic_sample": "#673AB7",
-                    "show_baseline": true,
-                    "show_scale_text": true,
-                    "show_score_vertical_line": true,
-                    "show_score_profile_line": false,
-                    "show_score_circles": true,
-                    "show_settings_block": false,
-                    "show_ranges_overview": true,
-                    "allow_toggle_settings_block": false,
-                    "range_alpha": 0.08,
-                    "vertical_grid_every_x": 10,
-                    "response_title_path": "calculation.resilienz_score.range.interpretation_de",
-                    "response_date_path": "date"
-                },
-                "scales": [{
-                    "left_text": "Niedrige Resilienz",
-                    "right_text": "Hohe Resilienz",
-                    "score_path": "calculation.resilienz_score.rs13_score",
-                    "clinic_sample_var": null
-                }],
-                "ranges": [{
-                        "range_start": 13,
-                        "range_stop": 66,
-                        "interpretation_de": "niedrige Widerstandskraft (Resilienz)",
-                        "text": "Niedrig",
-                        "color": "#F44336"
-                    },
-                    {
-                        "range_start": 67,
-                        "range_stop": 72,
-                        "interpretation_de": "moderate Widerstandskraft (Resilienz)",
-                        "text": "Moderat",
-                        "color": "#FF9800"
-                    },
-                    {
-                        "range_start": 73,
-                        "range_stop": 91,
-                        "interpretation_de": "hohe Widerstandskraft (Resilienz)",
-                        "text": "Hoch",
-                        "color": "#4CAF50"
-                    }
-                ]
-            },
             "data_table": {
                 "rows": [{
                         "name": "Messzeitpunkt",
-                        "variable": "rs13_mz",
+                        "variable": "rs13_messzeitpunkt",
                         "path": "response.rs13_messzeitpunkt",
                         "interpretation": "mz"
                     },
@@ -3056,153 +2996,65 @@ Vue.component('app-rs13', {
             }
         }
     },
-    methods: {
-        getTitle: function (r) {
-            try {
-                // HERE
-                console.log('=====> getTitle', r);
-                var ret_string = "Erfassung vom ";
-
-                if ("rs13_messzeitpunkt" in r.response) {
-                    if (parseInt(r.response.rs13_messzeitpunkt) === 1 ) {
-                        ret_string = "Erfassung «Eintritt» vom ";
-                    };    
-                    if (parseInt(r.response.rs13_messzeitpunkt) === 2 ) {
-                        ret_string = "Erfassung «Austritt» vom ";
-                    };    
-                } else {
-                    ret_string = "Erfassung vom ";    
-                };
-                
-                if ("rs13_date" in r.response) {
-                    ret_string = ret_string + this.getDateCH(r.response.rs13_date, false);
-                } else {
-                    ret_string = ret_string + this.getDateCH(r.date, false);
-                };
-                
-            } catch (e) {
-                console.error('getTitle', e);
-            }
-            return ret_string;
-        },
-        getSubtitle: function (r) {
-            var ret_string = "::";
-            try {
-                if (r.calculation_found) {
-                    const name = r.calculation.resilienz_score.range.interpretation_de;
-                    ret_string = name.charAt(0).toUpperCase() + name.slice(1);
-                } else {
-                    ret_string = "Calculation wird berechnet...";
-                };
-                return ret_string;
-            } catch (e) {
-                console.error('getSubtitle', e);
-            }
-            return ret_string;
-        }
-    },
+    methods: {},
     computed: {
         patient_secure() {
-            // return data
             try {
                 return this.$store.state.patient.data.extras.secure;
+
             } catch (e) {
                 return "";
             };
         },
-        sr_data() {
-            // return data
+        sr_full() {
             try {
-                return this.$store.state.sr.data;
+                return this.$store.state.data_apps.data_object[helpers.getAppID()];
+            } catch (e) {
+                return null;
+            };
+        },
+        sr_data() {
+            try {
+                return this.sr_full.data;
             } catch (e) {
                 return [];
             };
         },
+        current_module() {
+            try {
+                return this.$store.state.current_app.module;
+            } catch (e) {
+                return null;
+            };
+        },
         sr_count_text() {
-            // return data
             try {
                 var ret_text = "";
-                if (this.$store.state.sr.data.length === 0) {
+                if (this.sr_data.length === 0) {
                     ret_text = "Keine Erfassung";
                 };
-                if (this.$store.state.sr.data.length === 1) {
+                if (this.sr_data.length === 1) {
                     ret_text = "Eine Erfassung";
                 };
-                if (this.$store.state.sr.data.length > 1) {
-                    ret_text = "Erfassungen (" + this.$store.state.sr.data.length + ")";
+                if (this.sr_data.length > 1) {
+                    ret_text = "Erfassungen (" + this.sr_data.length + ")";
                 };
                 return ret_text;
             } catch (e) {
                 return "";
             };
         },
-        sr_full() {
-            // return data
-            try {
-                return this.$store.state.sr;
-            } catch (e) {
-                return [];
-            };
-        },
         pdf_ready() {
-            // return data
             try {
-                if (this.$store.state.sr.data.length) {
-
+                if ((this.sr_data.length) && (this.current_module)) {
+                    // Build PDF
                     var pdf = [];
-
-                    // pdf.push(makepdf._suedhang_logo_anschrift());
-
-                    var title = makepdf._title(this.base_config.app_short_description, this.base_config.app_name);
-                    pdf.push(title);
-
-                    if (this.$store.state.sr.data.length > 0) {
-
-                        pdf.push(makepdf._heading("Auswertung / Interpretation", null, "h2"));
-
-                        this.$store.state.sr.data.forEach(function (d) {
-                            if (d.calculation_found) {
-
-                                var interpret = makepdf._text(d.calculation.resilienz_score.interpretation);
-                                pdf.push(makepdf._keepTogether(interpret));
-
-                                pdf.push(makepdf._horizontalLine(100, "#F5F5F5"));
-                                var pdf_chart = makepdf._pdf_chart_profile("de", this.rs_13_chart.options, {}, {}, [], this.rs_13_chart.scales, this.$store.state.sr, this.rs_13_chart.ranges);
-                                pdf.push(pdf_chart);
-                                pdf.push(makepdf._horizontalLine(100, "#F5F5F5"));
-
-                            } else {
-                                pdf.push(makepdf._noData("Resilienz", "Calculation noch nicht berechnet.", 6));
-                            };
-                        }.bind(this));
-                        // pdf.push(makepdf._stamp(this.patient_secure, 6));
-                    } else {
-                        pdf.push(makepdf._noData("Resilienz", "Keine Daten vorhanden", 6));
-                    };
-
+                    pdf.push(this.pdf_app_info(this.current_module, true));
+                    pdf.push(this.rs13_pdf_content(this.sr_full));
                     this.pdf_content = pdf;
                     return true;
                 } else {
                     return false;
-                };
-
-            } catch (e) {
-                return false;
-            };
-        },
-        missings() {
-            try {
-                if (this.$store.state.sr === null) {
-                    return false;
-                } else {
-                    var sr = this.$store.state.sr.data;
-                    var data_errors = false;
-                    sr.forEach(function (item) {
-                        if (item.all_found === false) {
-                            data_errors = true;
-                        };
-                    }.bind(this));
-                    return data_errors;
                 };
             } catch (e) {
                 return false;
@@ -3213,9 +3065,9 @@ Vue.component('app-rs13', {
         <div>
 
             <div v-if="!missings">
-                <optinomic-content-block :title="base_config.app_short_description" subtitle="Übersicht | Grafik" id="rs13_chart">
-                    <optinomic-chart-profile v-bind:options="JSON.stringify(rs_13_chart.options)"
-                        v-bind:scales="JSON.stringify(rs_13_chart.scales)" v-bind:ranges="JSON.stringify(rs_13_chart.ranges)"
+                <optinomic-content-block v-if="sr_full" :title="base_config.app_short_description" subtitle="Übersicht | Grafik" id="rs13_chart">
+                    <optinomic-chart-profile v-bind:options="JSON.stringify(rs13_chart.options)"
+                        v-bind:scales="JSON.stringify(rs13_chart.scales)" v-bind:ranges="JSON.stringify(rs13_chart.ranges)"
                         v-bind:scores="JSON.stringify(sr_full)">
                     </optinomic-chart-profile>
                 </optinomic-content-block>
@@ -3224,7 +3076,7 @@ Vue.component('app-rs13', {
             <div v-for="sr in sr_data" :key="sr.event_id">
 
                 <div v-if="sr.calculation_found">
-                    <optinomic-content-block :title="getTitle(sr)" :subtitle="getSubtitle(sr)"
+                    <optinomic-content-block :title="rs13_getTitle(sr)" :subtitle="rs13_getSubtitle(sr)"
                         :id="'id_erfassung_' + sr.event_id">
                         <p class="overline">Auswertung / Interpretation</p>
                         <optinomic-clipboard-text :text="sr.calculation.resilienz_score.interpretation">
@@ -3252,8 +3104,8 @@ Vue.component('app-rs13', {
 });
 
 
-// Plugin: global_helpers
-const global_helpers = {
+// Plugin: optinomic_globals
+const optinomic_globals = {
     install(Vue, options) {
         Vue.mixin({
             methods: {
@@ -3276,11 +3128,236 @@ const global_helpers = {
                     };
                     return dateObj.toLocaleDateString('de-DE', o);
                 }
+            },
+            computed: {
+                missings() {
+                    try {
+                        if (this.$store.state.sr === null) {
+                            return false;
+                        } else {
+                            var sr = this.$store.state.sr.data;
+                            var data_errors = false;
+                            sr.forEach(function (item) {
+                                if (item.all_found === false) {
+                                    data_errors = true;
+                                };
+                            }.bind(this));
+                            return data_errors;
+                        };
+                    } catch (e) {
+                        return false;
+                    };
+                }
             }
         });
     }
 };
-Vue.use(global_helpers)
+Vue.use(optinomic_globals)
+
+// Plugin: pdf_globals
+const pdf_globals = {
+    install(Vue, options) {
+        Vue.mixin({
+            methods: {
+                pdf_app_title: function (title, subtitle, description) {
+                    var titel = [];
+                    titel.push(makepdf._horizontalLine(100, "#E0E0E0"));
+                    titel.push(makepdf._heading(title, subtitle, 'h1'));
+                    if ((description !== null) && (description !== "")) {
+                        titel.push(makepdf._text(description));
+                    }
+                    return makepdf._keepTogether(titel, title + '_titel');
+                },
+                pdf_no_data: function (title) {
+                    // No Data
+                    var pdf = [];
+                    pdf.push(makepdf._noData(title + ': ', 'Keine Daten vorhanden.'));
+                    return makepdf._keepTogether(pdf, title + '_no_data');
+                },
+                pdf_error: function (title) {
+                    // No Data
+                    var pdf = [];
+                    pdf.push(makepdf._noData(title + ': ', 'Unerwarteter Fehler.'));
+                    return makepdf._keepTogether(pdf, title + '_pdf_error');
+                },
+                pdf_app_info: function (m, big) {
+                    // No Data
+                    var pdf = [];
+                    // pdf.push(makepdf._suedhang_logo_anschrift());
+
+                    if (big === true) {
+                        pdf.push(makepdf._title(m.name, m.short_description));
+                        pdf.push(makepdf._text(m.description));
+                        return makepdf._keepTogether(pdf, m.name + '_appinfo_big');
+                    } else {
+                        pdf.push(this.pdf_app_title(m.name, m.short_description, m.description));
+                        return makepdf._keepTogether(pdf, m.name + '_appinfo');
+                    };
+                }
+            }
+        });
+    }
+};
+Vue.use(pdf_globals)
+
+// Plugin: plugin_rs13
+const plugin_rs13 = {
+    install(Vue, options) {
+        Vue.mixin({
+            data: function () {
+                return {
+                    "base_config": {
+                        "app_name": "Resilienzfragebogen (RS-13)",
+                        "app_short_description": "Psychische Widerstandskraft",
+                    },
+                    "rs13_chart": {
+                        "options": {
+                            "min": 0,
+                            "max": 100,
+                            "item_height": 50,
+                            "item_text_left": 83,
+                            "item_text_right": 60,
+                            "color_skin": "indigo_grey_pink",
+                            "color_grid": "#9E9E9E",
+                            "color_clinic_sample": "#673AB7",
+                            "show_baseline": true,
+                            "show_scale_text": true,
+                            "show_score_vertical_line": true,
+                            "show_score_profile_line": false,
+                            "show_score_circles": true,
+                            "show_settings_block": false,
+                            "show_ranges_overview": true,
+                            "allow_toggle_settings_block": false,
+                            "range_alpha": 0.08,
+                            "vertical_grid_every_x": 10,
+                            "response_title_path": "calculation.resilienz_score.range.interpretation_de",
+                            "response_date_path": "date"
+                        },
+                        "scales": [{
+                            "left_text": "Niedrige Resilienz",
+                            "right_text": "Hohe Resilienz",
+                            "score_path": "calculation.resilienz_score.rs13_score",
+                            "clinic_sample_var": null
+                        }],
+                        "ranges": [{
+                                "range_start": 13,
+                                "range_stop": 66,
+                                "interpretation_de": "niedrige Widerstandskraft (Resilienz)",
+                                "text": "Niedrig",
+                                "color": "#F44336"
+                            },
+                            {
+                                "range_start": 67,
+                                "range_stop": 72,
+                                "interpretation_de": "moderate Widerstandskraft (Resilienz)",
+                                "text": "Moderat",
+                                "color": "#FF9800"
+                            },
+                            {
+                                "range_start": 73,
+                                "range_stop": 91,
+                                "interpretation_de": "hohe Widerstandskraft (Resilienz)",
+                                "text": "Hoch",
+                                "color": "#4CAF50"
+                            }
+                        ]
+                    },
+                }
+            },
+            methods: {
+                rs13_getTitle: function (r) {
+                    try {
+                        var ret_string = "Erfassung vom ";
+
+                        if ("rs13_messzeitpunkt" in r.response) {
+                            if (parseInt(r.response.rs13_messzeitpunkt) === 1) {
+                                ret_string = "Erfassung «Eintritt» vom ";
+                            };
+                            if (parseInt(r.response.rs13_messzeitpunkt) === 2) {
+                                ret_string = "Erfassung «Austritt» vom ";
+                            };
+                        } else {
+                            ret_string = "Erfassung vom ";
+                        };
+
+                        if ("rs13_date" in r.response) {
+                            ret_string = ret_string + this.getDateCH(r.response.rs13_date, false);
+                        } else {
+                            ret_string = ret_string + this.getDateCH(r.date, false);
+                        };
+
+                    } catch (e) {
+                        console.error('getTitle', e);
+                    }
+                    return ret_string;
+                },
+                rs13_getSubtitle: function (r) {
+                    var ret_string = "::";
+                    try {
+                        if (r.calculation_found) {
+                            const name = r.calculation.resilienz_score.range.interpretation_de;
+                            ret_string = name.charAt(0).toUpperCase() + name.slice(1);
+                        } else {
+                            ret_string = "Calculation wird berechnet...";
+                        };
+                        return ret_string;
+                    } catch (e) {
+                        console.error('getSubtitle', e);
+                    }
+                    return ret_string;
+                },
+                rs13_pdf_content: function (sr) {
+                    var pdf = [];
+                    try {
+
+                        if (sr.data.length > 0) {
+
+                            // Chart | Grafik
+                            var subtitle = [];
+                            subtitle.push(makepdf._horizontalLine(100, "#F5F5F5"));
+                            subtitle.push(makepdf._heading(this.base_config.app_short_description, null, 'h3'));
+                            pdf.push(makepdf._keepTogether(subtitle, "rs13_chart_title"));
+
+                            var pdf_chart = [];
+                            pdf_chart.push(makepdf._pdf_chart_profile("de", this.rs13_chart.options, {}, {}, [], this.rs13_chart.scales, sr, this.rs13_chart.ranges));
+                            pdf_chart.push(makepdf._spacer(10));
+                            pdf.push(makepdf._keepTogether(pdf_chart, "rs13_chart"));
+
+                            // Messungen
+                            sr.data.forEach(function (sr) {
+                                if (sr.calculation_found) {
+                                    // Messung Titel
+                                    var subtitle = [];
+                                    subtitle.push(makepdf._horizontalLine(100, "#F5F5F5"));
+                                    subtitle.push(makepdf._heading(this.rs13_getTitle(sr), '', 'h3'));
+                                    pdf.push(makepdf._keepTogether(subtitle, "rs13_messung_title"));
+
+                                    // Interpretation
+                                    var interpretation = [];
+                                    interpretation.push(makepdf._text(this.rs13_getSubtitle(sr) + ": " + sr.calculation.resilienz_score.interpretation));
+                                    pdf.push(makepdf._keepTogether(interpretation, "rs13_messung_interpretation"));
+
+                                } else {
+                                    pdf.push(makepdf._noData("Resilienz: ", "Calculation noch nicht berechnet.", 6));
+                                };
+                            }.bind(this));
+
+                        } else {
+                            pdf.push(this.pdf_no_data(this.base_config.app_name));
+                        };
+
+                    } catch (e) {
+                        console.log('rs13_pdf_content', e)
+                        pdf.push(this.pdf_error(this.base_config.app_name));
+                    };
+
+                    return pdf;
+                }
+            }
+        });
+    }
+};
+Vue.use(plugin_rs13)
 
 
 
@@ -3293,12 +3370,16 @@ new Vue({
             apps: {},
             table_of_contents: [],
             current_app: null,
-            sr: null,
             user: null,
             patient: null,
             stays: null,
             clinic: null,
-            data_apps: {}
+            data_apps: {
+                count: 0,
+                init_array: [],
+                loaded_array: [],
+                data_object: {}
+            }
         },
         getters: {
             isAdmin: state => {
@@ -3322,18 +3403,12 @@ new Vue({
                 var d = Object.assign({}, pl);
                 var da = Object.assign({}, state.data_apps);
                 try {
-                    da.base.forEach(function (app, appID) {
-                        if (app.app_id === d.root) {
-                            app.init = true;
-                            app = Object.assign(app, d.data);
-                        };
-                    });
-
-                    if (d.data.loaded === true) {
-                        da.data_init_array.push(d.root);
+                    if (d.data.loaded !== true) {
+                        da.init_array.push(d.root);
                     } else {
-                        da.data_loaded_array.push(d.root);
-                        da.count = state.data_apps.count + 1;
+                        da.data_object[d.root] = Object.assign({}, d.data);
+                        da.loaded_array.push(d.root);
+                        da.count = da.count + 1;
                     };
 
                     // https://vuex.vuejs.org/guide/mutations.html#mutations-follow-vue-s-reactivity-rules
@@ -3410,7 +3485,6 @@ new Vue({
                 if (store_root !== 'sr') {
                     savetype = 'saveAppData';
                 };
-
 
                 commit({
                     type: savetype,
