@@ -2147,33 +2147,40 @@ Vue.component('app-optinomic', {
     },
     created() {
         this.$store.dispatch('getSurveyResponses');
-        this.$store.dispatch('getUser');
         if (helpers.getPatientID() !== 0) {
             this.$store.dispatch('getPatient');
+            this.$store.dispatch('getPatientStays');
         };
+        this.$store.dispatch('getUser');
         this.$store.dispatch('getClinic');
     },
     computed: {
         sr() {
-            // get survey_response
             try {
                 return this.$store.state.sr;
             } catch (e) {
                 return {};
             };
         },
-        loaded() {
-            // get survey_response
+        isAdmin() {
             try {
-                if ((this.$store.state.sr.have_data === true) || (this.$store.state.sr.have_data === false)) {
+                return this.$store.state.user.data.isAdmin;
+            } catch (e) {
+                return {};
+            };
+        },
+        loaded() {
+            try {
+                if (this.$store.state.sr.loaded === true) {
                     return true;
+                } else {
+                    return false;   
                 };
             } catch (e) {
                 return false;
             };
         },
         user_text() {
-            // get survey_response
             try {
                 return this.$store.state.user.data.first_name + " " + this.$store.state.user.data.last_name + " (" + this.$store.state.user.data.initials + ")";
             } catch (e) {
@@ -2181,111 +2188,181 @@ Vue.component('app-optinomic', {
             };
         },
         clinic_data() {
-            // get survey_response
             try {
                 return this.$store.state.clinic.data;
             } catch (e) {
                 return false;
             };
         },
-        missing_data() {
-            // get survey_response
-            if (this.$store.state.sr === null) {
+        could_have_data() {
+            try {
+                var ret_bool = false;
+
+                if (this.$store.state.current_app.module.surveys.length > 0) {
+                    ret_bool = true;
+                }
+                return ret_bool;
+            } catch (e) {
                 return false;
-            } else {
-                var sr = this.$store.state.sr.data;
-                var data_errors = false;
-                sr.forEach(function (item) {
-                    if (item.all_found === false) {
-                        data_errors = true;
-                    };
-                });
-                return data_errors;
+            };
+        },
+        missing_data() {
+            try {
+                if (this.$store.state.sr === null) {
+                    return false;
+                } else {
+                    var sr = this.$store.state.sr.data;
+                    var data_errors = false;
+                    sr.forEach(function (item) {
+                        if (item.all_found === false) {
+                            data_errors = true;
+                        };
+                    }.bind(this));
+                    return data_errors;
+                };
+            } catch (e) {
+                return false;
             };
         }
     },
+    methods: {
+        logState: function (pretty) {
+            try {
+                var log = Object.assign({}, this.$store.state);
+                var dateObj = new Date();
+                const options = {
+                    year: 'numeric',
+                    month: 'numeric',
+                    day: 'numeric',
+                    hour: 'numeric',
+                    minute: 'numeric'
+                };
+                var title = "STATE :: " + dateObj.toLocaleDateString('de-DE', options);
+
+                if (pretty === true) {
+                    var str = JSON.stringify(log, null, 2);
+                    console.log(title, str);
+                } else {
+                    console.log(title, log);
+                };
+
+            } catch (e) {
+                console.log('logState', e);
+            }
+        }
+    },
     template: `
-    <template>
-        <v-app id="top" style="background-color:#f8f8f8!important;">
-            <v-content class="mb-12">
-                <v-container class="mt-10 mb-12 pt-8 pb-12 pl-10 pr-8 elevation-1" style="background-color:white!important;">
+        <template>
+            <v-app id="top" style="background-color:#f8f8f8!important;">
+                <v-content class="mb-12">
+                    <v-container class="mt-10 mb-12 pt-8 pb-12 pl-10 pr-8 elevation-1"
+                        style="background-color:white!important;">
 
-                    <v-row>
-                        <v-col cols="12" sm="6">
-                            <img v-if="clinic_data" :src="clinic_data.clinic_logo" :alt="clinic_data.clinic_slogan"
-                                height="46">
-                            <v-skeleton-loader v-if="!clinic_data" height="46px" max-width="240px" type="image">
-                            </v-skeleton-loader>
-                        </v-col>
-                        <v-col cols="12" sm="6">
-                            <optinomic-toc></optinomic-toc>
-                        </v-col>
-                    </v-row>
-
-                    <app-title :title="title" :subtitle="subtitle" class="mt-4"></app-title>
-
-                    <div v-if="loaded">
-                        <div v-if="sr.have_data">
-                            <optinomic-content-block title="Missings" subtitle="Datenhinweis" id="data_note" 
-                                v-if="missing_data">
-                                <div v-for="r in sr.data">
-                                    <div v-if="r.all_found === false">
-                                        <v-alert dense outlined text type="error">
-                                            <p style="margin:0;padding:0">Bei der Messung vom <span
-                                                    v-html="formatDateCH(r.date)"></span> sind nicht alle Daten vorhanden:
-                                            </p>
-                                            <p style="margin:0;padding:0" v-if="r.calculation_found === false">
-                                                - Calculation nicht gefunden / noch nicht berechnet!
-                                            </p>
-                                            <p style="margin:0;padding:0" v-if="r.event_found === false">
-                                                - Event <span v-html="r.event_id"></span> nicht gefunden.
-                                            </p>
-                                            <p style="margin:0;padding:0" v-if="r.patient_found === false">
-                                                - Patient <span v-html="r.patient_id"></span> nicht gefunden.
-                                            </p>
-                                            <p style="margin:0;padding:0" v-if="r.stay_found === false">
-                                                - Fall <span v-html="r.stay_id"></span> nicht gefunden.
-                                            </p>
-                                        </v-alert>
-                                    </div>
-                                </div>
-                            </optinomic-content-block>
-                            <slot></slot>
-                        </div>
-                        <div v-else>
-                            <optinomic-content-block subtitle="Hinweis" title="Keine Messdaten" id="in_no_data" show_in_toc="false">
-                                <v-alert prominent text type="error">
-                                    Es sind keine Messdaten vorhanden.
-                                </v-alert>
-                            </optinomic-content-block>
-                        </div>
-                    </div>
-                    <div v-else>
-                        <v-sheet class="px-3 pt-3 pb-3">
-                            <v-skeleton-loader class="mx-auto" type="card"></v-skeleton-loader>
-                        </v-sheet>
-                    </div>
-                    <div class="mt-12 pt-12 ml-4 mr-6">
-                        <v-row style="border-top: 1px solid #8b0042;">
-                            <v-col cols="12" sm="6" class="px-0">
-                                <p class="subtitle-1 font-italic font-weight-thin text-left" style="color:#8b0042"
-                                    v-text="clinic_data.clinic_slogan" v-if="clinic_data"></p>
+                        <v-row>
+                            <v-col cols="12" sm="6">
+                                <img v-if="clinic_data" :src="clinic_data.clinic_logo" :alt="clinic_data.clinic_slogan"
+                                    height="46">
+                                <v-skeleton-loader v-if="!clinic_data" height="46px" max-width="240px" type="image">
+                                </v-skeleton-loader>
                             </v-col>
-                            <v-col cols="12" sm="6" class="px-0">
-                                <v-btn class="ml-1" style="float:right;" icon x-small color="#8b0042" @click="$vuetify.goTo('#top')">
-                                    <v-icon dark>mdi-arrow-up</v-icon>
-                                </v-btn>
-                                <p class="caption font-weight-light text-right" v-text="user_text"></p>
+                            <v-col cols="12" sm="6">
+                                <optinomic-toc></optinomic-toc>
                             </v-col>
                         </v-row>
-                    </div>
-                </v-container>
-            </v-content>
-        </v-app>
-    </template>
+
+                        <app-title :title="title" :subtitle="subtitle" class="mt-4"></app-title>
+
+                        <div v-if="loaded">
+                            <div v-if="could_have_data">
+                                <div v-if="sr.have_data">
+                                    <optinomic-content-block title="Missings" subtitle="Datenhinweis" id="data_note"
+                                        v-if="missing_data">
+                                        <div v-for="r in sr.data">
+                                            <div v-if="r.all_found === false">
+                                                <v-alert dense outlined text type="error">
+                                                    <p style="margin:0;padding:0">Bei der Messung vom <span
+                                                            v-html="formatDateCH(r.date)"></span> sind nicht alle Daten
+                                                        vorhanden:
+                                                    </p>
+                                                    <p style="margin:0;padding:0" v-if="r.calculation_found === false">
+                                                        - Calculation nicht gefunden / noch nicht berechnet!
+                                                    </p>
+                                                    <p style="margin:0;padding:0" v-if="r.event_found === false">
+                                                        - Event <span v-html="r.event_id"></span> nicht gefunden.
+                                                    </p>
+                                                    <p style="margin:0;padding:0" v-if="r.patient_found === false">
+                                                        - Patient <span v-html="r.patient_id"></span> nicht gefunden.
+                                                    </p>
+                                                    <p style="margin:0;padding:0" v-if="r.stay_found === false">
+                                                        - Fall <span v-html="r.stay_id"></span> nicht gefunden.
+                                                    </p>
+                                                </v-alert>
+                                            </div>
+                                        </div>
+                                    </optinomic-content-block>
+                                    <slot></slot>
+                                </div>
+                                <div v-else>
+                                    <optinomic-content-block subtitle="Hinweis" title="Keine Messdaten" id="in_no_data"
+                                        show_in_toc="false">
+                                        <v-alert prominent text type="error">
+                                            Es sind keine Messdaten vorhanden.
+                                        </v-alert>
+                                    </optinomic-content-block>
+                                </div>
+                            </div>
+                            <div v-else>
+                                <slot></slot>
+                            </div>
+                        </div>
+                        <div v-else lass="mx-3 mt-3">
+                            <v-sheet class="px-3 pt-3 pb-3">
+                                <v-skeleton-loader class="mx-auto" type="card"></v-skeleton-loader>
+                            </v-sheet>
+                        </div>
+                        <!-- ADMIN - Tools -->
+                        <div v-if="isAdmin">
+                            <optinomic-content-block title="Administrator" subtitle="Only for" id="admin_tools"
+                                show_in_toc="false">
+                                <v-simple-table dense>
+                                    <tbody>
+                                        <tr>
+                                            <td>State (Check Console)</td>
+                                            <td>
+                                                <v-btn text small @click="logState(true)">
+                                                    beautify
+                                                </v-btn>
+                                                <v-btn text small color="#8b0042" @click="logState(false)">
+                                                    log
+                                                </v-btn>
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </v-simple-table>
+                            </optinomic-content-block>
+                        </div>
+                        <!-- FOOTER -->
+                        <div class="mt-12 pt-12 ml-4 mr-6">
+                            <v-row style="border-top: 1px solid #8b0042;">
+                                <v-col cols="12" sm="6" class="px-0">
+                                    <p class="subtitle-1 font-italic font-weight-thin text-left" style="color:#8b0042"
+                                        v-text="clinic_data.clinic_slogan" v-if="clinic_data"></p>
+                                </v-col>
+                                <v-col cols="12" sm="6" class="px-0">
+                                    <v-btn class="ml-1" style="float:right;" icon x-small color="#8b0042"
+                                        @click="$vuetify.goTo('#top')">
+                                        <v-icon dark>mdi-arrow-up</v-icon>
+                                    </v-btn>
+                                    <p class="caption font-weight-light text-right" v-text="user_text"></p>
+                                </v-col>
+                            </v-row>
+                        </div>
+                    </v-container>
+                </v-content>
+            </v-app>
+        </template> 
     `
 });
-
 
 
 // Optinomic App-Title
@@ -2528,32 +2605,35 @@ Vue.component('optinomic-content-block', {
         show_in_toc: {
             type: Boolean,
             default: true
-        },
-        toc_pushed: {
-            type: Boolean,
-            default: false
         }
     },
-    data: () => ({}),
     created() {
-        if ((this.toc_pushed === false) && (this.show_in_toc === true)) {
+        // Push to table_of_contents if needed.
+        if (this.show_in_toc === true) {
             var toc = this.$store.state.table_of_contents.slice(0);
             var toc_entry = {
                 title: this.title,
                 subtitle: this.subtitle,
                 id: this.id
             };
-            toc.push(toc_entry);
-            this.toc_pushed = true;
+            var have_to_push = true;
+            toc.forEach(function (item) {
+                if (item.id === this.id) {
+                    have_to_push = false;
+                };
+            }.bind(this));
 
-            this.$store.commit({
-                type: 'saveData',
-                root: 'table_of_contents',
-                data: toc
-            });
+            if (have_to_push) {
+                toc.push(toc_entry);
+
+                this.$store.commit({
+                    type: 'saveData',
+                    root: 'table_of_contents',
+                    data: toc
+                });
+            };
         };
     },
-    computed: {},
     template: `
         <div class="mb-6 pt-8" :id="id">
             <div class="d-flex flex-row justify-space-between align-end">
@@ -2578,7 +2658,6 @@ Vue.component('optinomic-content-block', {
 // Optinomic optinomic-toc
 Vue.component('optinomic-toc', {
     props: {},
-
     computed: {
         toc_data() {
             // return data
@@ -2592,7 +2671,6 @@ Vue.component('optinomic-toc', {
     },
     template: `
         <div class="d-flex flex-row justify-start">
-        
             <div class="mb-12 mt-2">
                 <div class="ml-5 mb-2">
                     <p class="overline" style="color:#8b0042">Table of Contents</p>
@@ -2687,21 +2765,36 @@ Vue.component('optinomic-data-table', {
                                 sr_pushed = item_index;
                             };
 
-                            // Interpretation
-                            try {
-                                if (row.interpretation !== null) {
-                                    var current_interpretation = this.interpretations[row.interpretation].slice();
+                            if ((r_flat[row.path] === "") || (r_flat[row.path] === undefined) || (r_flat[row.path] === null)) {
+                                // Missings
+                                row[computed_variablename] = "-"
+                            } else {
+                                // Interpretation
+                                try {
+                                    if (row.interpretation !== null) {
+                                        if (row.interpretation === 'date') {
+                                            var dateObj = new Date(r_flat[row.path]);
+                                            const options = {
+                                                year: 'numeric',
+                                                month: 'numeric',
+                                                day: 'numeric'
+                                            };
+                                            row[computed_variablename] = dateObj.toLocaleDateString('de-DE', options);
+                                        } else {
+                                            var current_interpretation = this.interpretations[row.interpretation].slice();
 
-                                    var value = r_flat[row.path];
-                                    current_interpretation.forEach(function (i) {
-                                        if ((i.value + '') === (value + '')) {
-                                            value = i.value + ', ' + i.text;    
+                                            var value = r_flat[row.path];
+                                            current_interpretation.forEach(function (i) {
+                                                if ((i.value + '') === (value + '')) {
+                                                    value = i.value + ', ' + i.text;
+                                                };
+                                            }.bind(this));
+                                            row[computed_variablename] = value;
                                         };
-                                    }.bind(this));
-                                    row[computed_variablename] = value;
+                                    };
+                                } catch (e) {
+                                    row[computed_variablename] = r_flat[row.path];
                                 };
-                            } catch (e) {
-                                row[computed_variablename] = r_flat[row.path];
                             };
 
                         }.bind(this));
@@ -2709,7 +2802,6 @@ Vue.component('optinomic-data-table', {
                 };
                 return new_rows;
             } catch (e) {
-                console.error('rows_extended', e);
                 return this.rows;
             }
         }
@@ -2810,154 +2902,201 @@ Vue.component('app-rs13', {
                 "app_type": "patient"
             },
             "pdf_content": [],
-            "options": {
-                "min": 0,
-                "max": 100,
-                "item_height": 50,
-                "item_text_left": 83,
-                "item_text_right": 60,
-                "color_skin": "indigo_grey_pink",
-                "color_grid": "#9E9E9E",
-                "color_clinic_sample": "#673AB7",
-                "show_baseline": true,
-                "show_scale_text": true,
-                "show_score_vertical_line": true,
-                "show_score_profile_line": false,
-                "show_score_circles": true,
-                "show_settings_block": false,
-                "show_ranges_overview": true,
-                "allow_toggle_settings_block": false,
-                "range_alpha": 0.08,
-                "vertical_grid_every_x": 10,
-                "response_title_path": "calculation.resilienz_score.range.interpretation_de",
-                "response_date_path": "date"
-            },
-            "scales": [{
-                "left_text": "Niedrige Resilienz",
-                "right_text": "Hohe Resilienz",
-                "score_path": "calculation.resilienz_score.rs13_score",
-                "clinic_sample_var": null
-            }],
-            "ranges": [{
-                "range_start": 13,
-                "range_stop": 66,
-                "interpretation_de": "niedrige Widerstandskraft (Resilienz)",
-                "text": "Niedrig",
-                "color": "#F44336"
-            }, {
-                "range_start": 67,
-                "range_stop": 72,
-                "interpretation_de": "moderate Widerstandskraft (Resilienz)",
-                "text": "Moderat",
-                "color": "#FF9800"
-            }, {
-                "range_start": 73,
-                "range_stop": 91,
-                "interpretation_de": "hohe Widerstandskraft (Resilienz)",
-                "text": "Hoch",
-                "color": "#4CAF50"
-            }],
-            "data_table": {
-                "rows": [{
-                        name: 'Wenn ich Pläne habe, verfolge ich sie auch.',
-                        variable: 'rs13_01',
-                        path: 'response.rs13_01'
+            "rs_13_chart": {
+                "options": {
+                    "min": 0,
+                    "max": 100,
+                    "item_height": 50,
+                    "item_text_left": 83,
+                    "item_text_right": 60,
+                    "color_skin": "indigo_grey_pink",
+                    "color_grid": "#9E9E9E",
+                    "color_clinic_sample": "#673AB7",
+                    "show_baseline": true,
+                    "show_scale_text": true,
+                    "show_score_vertical_line": true,
+                    "show_score_profile_line": false,
+                    "show_score_circles": true,
+                    "show_settings_block": false,
+                    "show_ranges_overview": true,
+                    "allow_toggle_settings_block": false,
+                    "range_alpha": 0.08,
+                    "vertical_grid_every_x": 10,
+                    "response_title_path": "calculation.resilienz_score.range.interpretation_de",
+                    "response_date_path": "date"
+                },
+                "scales": [{
+                    "left_text": "Niedrige Resilienz",
+                    "right_text": "Hohe Resilienz",
+                    "score_path": "calculation.resilienz_score.rs13_score",
+                    "clinic_sample_var": null
+                }],
+                "ranges": [{
+                        "range_start": 13,
+                        "range_stop": 66,
+                        "interpretation_de": "niedrige Widerstandskraft (Resilienz)",
+                        "text": "Niedrig",
+                        "color": "#F44336"
                     },
                     {
-                        name: 'Normalerweise schaffe ich alles irgendwie.',
-                        variable: 'rs13_02',
-                        path: 'response.rs13_02'
+                        "range_start": 67,
+                        "range_stop": 72,
+                        "interpretation_de": "moderate Widerstandskraft (Resilienz)",
+                        "text": "Moderat",
+                        "color": "#FF9800"
                     },
                     {
-                        name: 'Ich lasse mich nicht so schnell aus der Bahn werfen.',
-                        variable: 'rs13_03',
-                        path: 'response.rs13_03'
-                    },
-                    {
-                        name: 'Ich mag mich.',
-                        variable: 'rs13_04',
-                        path: 'response.rs13_04'
-                    },
-                    {
-                        name: 'Ich kann mehrere Dinge gleichzeitig bewältigen.',
-                        variable: 'rs13_05',
-                        path: 'response.rs13_05'
-                    },
-                    {
-                        name: 'Ich bin entschlossen.',
-                        variable: 'rs13_06',
-                        path: 'response.rs13_06'
-                    },
-                    {
-                        name: 'Ich nehme die Dinge wie sie kommen.',
-                        variable: 'rs13_07',
-                        path: 'response.rs13_07'
-                    },
-                    {
-                        name: 'Ich behalte an vielen Dingen Interesse.',
-                        variable: 'rs13_08',
-                        path: 'response.rs13_08'
-                    },
-                    {
-                        name: 'Normalerweise kann ich eine Situation aus mehreren Perspektiven betrachten.',
-                        variable: 'rs13_09',
-                        path: 'response.rs13_09'
-                    },
-                    {
-                        name: 'Ich kann mich auch überwinden, Dinge zu tun, die ich eigentlich nicht machen will.',
-                        variable: 'rs13_10',
-                        path: 'response.rs13_10'
-                    },
-                    {
-                        name: 'Wenn ich in einer schwierigen Situation bin, finde ich gewöhnlich einen Weg heraus.',
-                        variable: 'rs13_11',
-                        path: 'response.rs13_11'
-                    },
-                    {
-                        name: 'In mir steckt genügend Energie, um alles zu machen, was ich machen muss.',
-                        variable: 'rs13_12',
-                        path: 'response.rs13_12'
-                    },
-                    {
-                        name: 'Ich kann es akzeptieren, wenn mich nicht alle Leute mögen.',
-                        variable: 'rs13_13',
-                        path: 'response.rs13_13'
-                    },
-                    {
-                        name: 'Resilienz Summenscore',
-                        variable: 'rs13_score',
-                        path: 'calculation.resilienz_score.rs13_score'
+                        "range_start": 73,
+                        "range_stop": 91,
+                        "interpretation_de": "hohe Widerstandskraft (Resilienz)",
+                        "text": "Hoch",
+                        "color": "#4CAF50"
                     }
                 ]
+            },
+            "data_table": {
+                "rows": [{
+                        "name": "Messzeitpunkt",
+                        "variable": "rs13_mz",
+                        "path": "response.rs13_messzeitpunkt",
+                        "interpretation": "mz"
+                    },
+                    {
+                        "name": "Erfassungsdatum",
+                        "variable": "rs13_date",
+                        "path": "response.rs13_date",
+                        "interpretation": "date"
+                    },
+                    {
+                        "name": "Wenn ich Pläne habe, verfolge ich sie auch.",
+                        "variable": "rs13_01",
+                        "path": "response.rs13_01"
+                    },
+                    {
+                        "name": "Normalerweise schaffe ich alles irgendwie.",
+                        "variable": "rs13_02",
+                        "path": "response.rs13_02"
+                    },
+                    {
+                        "name": "Ich lasse mich nicht so schnell aus der Bahn werfen.",
+                        "variable": "rs13_03",
+                        "path": "response.rs13_03"
+                    },
+                    {
+                        "name": "Ich mag mich.",
+                        "variable": "rs13_04",
+                        "path": "response.rs13_04"
+                    },
+                    {
+                        "name": "Ich kann mehrere Dinge gleichzeitig bewältigen.",
+                        "variable": "rs13_05",
+                        "path": "response.rs13_05"
+                    },
+                    {
+                        "name": "Ich bin entschlossen.",
+                        "variable": "rs13_06",
+                        "path": "response.rs13_06"
+                    },
+                    {
+                        "name": "Ich nehme die Dinge wie sie kommen.",
+                        "variable": "rs13_07",
+                        "path": "response.rs13_07"
+                    },
+                    {
+                        "name": "Ich behalte an vielen Dingen Interesse.",
+                        "variable": "rs13_08",
+                        "path": "response.rs13_08"
+                    },
+                    {
+                        "name": "Normalerweise kann ich eine Situation aus mehreren Perspektiven betrachten.",
+                        "variable": "rs13_09",
+                        "path": "response.rs13_09"
+                    },
+                    {
+                        "name": "Ich kann mich auch überwinden, Dinge zu tun, die ich eigentlich nicht machen will.",
+                        "variable": "rs13_10",
+                        "path": "response.rs13_10"
+                    },
+                    {
+                        "name": "Wenn ich in einer schwierigen Situation bin, finde ich gewöhnlich einen Weg heraus.",
+                        "variable": "rs13_11",
+                        "path": "response.rs13_11"
+                    },
+                    {
+                        "name": "In mir steckt genügend Energie, um alles zu machen, was ich machen muss.",
+                        "variable": "rs13_12",
+                        "path": "response.rs13_12"
+                    },
+                    {
+                        "name": "Ich kann es akzeptieren, wenn mich nicht alle Leute mögen.",
+                        "variable": "rs13_13",
+                        "path": "response.rs13_13"
+                    },
+                    {
+                        "name": "Resilienz Summenscore",
+                        "variable": "rs13_score",
+                        "path": "calculation.resilienz_score.rs13_score"
+                    }
+                ],
+                "interpretations": {
+                    "mz": [{
+                            "value": 1,
+                            "text": "Eintritt"
+                        },
+                        {
+                            "value": 2,
+                            "text": "Austritt"
+                        },
+                        {
+                            "value": 3,
+                            "text": "Anderer Messzeitpunkt"
+                        }
+                    ]
+                }
             }
         }
     },
     methods: {
         getTitle: function (r) {
-            var ret_string = "Erfassung";
-            console.log(r)
             try {
-                if (r.calculation_found) {
-                    const name = r.calculation.resilienz_score.range.interpretation_de;
-                    const nameCapitalized = name.charAt(0).toUpperCase() + name.slice(1)
-                    ret_string = nameCapitalized;
-                }
+                // HERE
+                console.log('=====> getTitle', r);
+                var ret_string = "Erfassung vom ";
+
+                if ("rs13_messzeitpunkt" in r.response) {
+                    if (parseInt(r.response.rs13_messzeitpunkt) === 1 ) {
+                        ret_string = "Erfassung «Eintritt» vom ";
+                    };    
+                    if (parseInt(r.response.rs13_messzeitpunkt) === 2 ) {
+                        ret_string = "Erfassung «Austritt» vom ";
+                    };    
+                } else {
+                    ret_string = "Erfassung vom ";    
+                };
+                
+                if ("rs13_date" in r.response) {
+                    ret_string = ret_string + this.getDateCH(r.response.rs13_date, false);
+                } else {
+                    ret_string = ret_string + this.getDateCH(r.date, false);
+                };
+                
             } catch (e) {
-                // Anweisungen für jeden Fehler
-                logMyErrors(e); // Fehler-Objekt an die Error-Funktion geben
+                console.error('getTitle', e);
             }
             return ret_string;
         },
         getSubtitle: function (r) {
             var ret_string = "::";
             try {
-                ret_string = formatDateCH(r.date);
                 if (r.calculation_found) {
-                    ret_string = ret_string + " | ∑ Resilienz-Summenscore: " + r.calculation.resilienz_score.rs13_score;
-                }
+                    const name = r.calculation.resilienz_score.range.interpretation_de;
+                    ret_string = name.charAt(0).toUpperCase() + name.slice(1);
+                } else {
+                    ret_string = "Calculation wird berechnet...";
+                };
+                return ret_string;
             } catch (e) {
-                // Anweisungen für jeden Fehler
-                logMyErrors(e); // Fehler-Objekt an die Error-Funktion geben
+                console.error('getSubtitle', e);
             }
             return ret_string;
         }
@@ -3028,7 +3167,7 @@ Vue.component('app-rs13', {
                                 pdf.push(makepdf._keepTogether(interpret));
 
                                 pdf.push(makepdf._horizontalLine(100, "#F5F5F5"));
-                                var pdf_chart = makepdf._pdf_chart_profile("de", this.options, {}, {}, [], this.scales, this.$store.state.sr, this.ranges);
+                                var pdf_chart = makepdf._pdf_chart_profile("de", this.rs_13_chart.options, {}, {}, [], this.rs_13_chart.scales, this.$store.state.sr, this.rs_13_chart.ranges);
                                 pdf.push(pdf_chart);
                                 pdf.push(makepdf._horizontalLine(100, "#F5F5F5"));
 
@@ -3048,48 +3187,101 @@ Vue.component('app-rs13', {
                 };
 
             } catch (e) {
-                console.error('ERROR: pdf_ready', e);
+                return false;
+            };
+        },
+        missings() {
+            try {
+                if (this.$store.state.sr === null) {
+                    return false;
+                } else {
+                    var sr = this.$store.state.sr.data;
+                    var data_errors = false;
+                    sr.forEach(function (item) {
+                        if (item.all_found === false) {
+                            data_errors = true;
+                        };
+                    }.bind(this));
+                    return data_errors;
+                };
+            } catch (e) {
                 return false;
             };
         }
     },
     template: `
         <div>
+
+            <div v-if="!missings">
+                <optinomic-content-block :title="base_config.app_short_description" subtitle="Übersicht | Grafik" id="rs13_chart">
+                    <optinomic-chart-profile v-bind:options="JSON.stringify(rs_13_chart.options)"
+                        v-bind:scales="JSON.stringify(rs_13_chart.scales)" v-bind:ranges="JSON.stringify(rs_13_chart.ranges)"
+                        v-bind:scores="JSON.stringify(sr_full)">
+                    </optinomic-chart-profile>
+                </optinomic-content-block>
+            </div>
+
             <div v-for="sr in sr_data" :key="sr.event_id">
 
                 <div v-if="sr.calculation_found">
-                    <optinomic-content-block :title="getTitle(sr)" :subtitle="getSubtitle(sr)" id="id_erfassungen">
+                    <optinomic-content-block :title="getTitle(sr)" :subtitle="getSubtitle(sr)"
+                        :id="'id_erfassung_' + sr.event_id">
                         <p class="overline">Auswertung / Interpretation</p>
                         <optinomic-clipboard-text :text="sr.calculation.resilienz_score.interpretation">
                         </optinomic-clipboard-text>
-
-                        <optinomic-chart-profile style="border-top:1px solid #fafafa;border-bottom:1px solid #fafafa;"
-                            v-bind:options="JSON.stringify(options)" v-bind:scales="JSON.stringify(scales)"
-                            v-bind:ranges="JSON.stringify(ranges)" v-bind:scores="JSON.stringify(sr_full)">
-                        </optinomic-chart-profile>
-                    </optinomic-content-block>
-                </div>
-                <div v-else>
-                    <optinomic-content-block :title="'Erfassung vom ' + formatDateCH(sr.date)" subtitle="Hinweis zur" id="id_no_calculation">
-                        <v-alert prominent outlined text type="error">
-                            Calculation noch nicht berechnet.
-                        </v-alert>
                     </optinomic-content-block>
                 </div>
 
             </div>
 
             <optinomic-content-block :subtitle="sr_count_text" title="Datentabelle" id="id_data_table">
-                <optinomic-data-table :rows="data_table.rows"></optinomic-data-table>
+                <optinomic-data-table :rows="data_table.rows" :interpretations="data_table.interpretations">
+                </optinomic-data-table>
             </optinomic-content-block>
 
-            <optinomic-content-block title="Druckvorlage" subtitle="PDF" id="id_pdf" v-if="pdf_ready">
-                <optinomic-pdfmake :header-left="patient_secure" footer-left="Resilienzfragebogen (RS-13)" header-right="Klinik Südhang"
-                    document-title="Resilienz" :content="pdf_content" hide-logo></optinomic-pdfmake>
-            </optinomic-content-block>
+            <div v-if="!missings">
+                <optinomic-content-block title="Druckvorlage" subtitle="PDF" id="id_pdf" v-if="pdf_ready">
+                    <optinomic-pdfmake :header-left="patient_secure" footer-left="Resilienzfragebogen (RS-13)"
+                        header-right="Klinik Südhang" document-title="Resilienz" :content="pdf_content" hide-logo>
+                    </optinomic-pdfmake>
+                </optinomic-content-block>
+            </div>
+
         </div>
     `
 });
+
+
+// Plugin: global_helpers
+const global_helpers = {
+    install(Vue, options) {
+        Vue.mixin({
+            methods: {
+                getDateCH: function (date, full) {
+                    var dateObj = new Date(date);
+                    var o = {};
+                    if (full === true) {
+                        o = {
+                            "weekday": "long",
+                            "year": "numeric",
+                            "month": "long",
+                            "day": "numeric"
+                        };
+                    } else {
+                        o = {
+                            "year": "numeric",
+                            "month": "numeric",
+                            "day": "numeric"
+                        };
+                    };
+                    return dateObj.toLocaleDateString('de-DE', o);
+                }
+            }
+        });
+    }
+};
+Vue.use(global_helpers)
+
 
 
 // Init Vue
@@ -3098,48 +3290,58 @@ new Vue({
     vuetify: new Vuetify(),
     store: new Vuex.Store({
         state: {
-            count: 0,
             apps: {},
             table_of_contents: [],
             current_app: null,
             sr: null,
             user: null,
             patient: null,
-            clinic: null
+            stays: null,
+            clinic: null,
+            data_apps: {}
+        },
+        getters: {
+            isAdmin: state => {
+                try {
+                    return state.user.data.isAdmin;
+                } catch (err) {
+                    return false;
+                };
+            }
         },
         mutations: {
             saveData(state, d) {
                 try {
-                    // console.error('state', d.root, d.data);
                     state[d.root] = d.data;
-                    console.warn('state :: ', new Date(), state);
+                    // console.warn('state :: ', new Date(), state);
                 } catch (err) {
                     console.error('Error: saveData', err);
                 };
             },
             saveAppData(state, pl) {
                 var d = Object.assign({}, pl);
+                var da = Object.assign({}, state.data_apps);
                 try {
-                    // console.log('=========>', d);
-                    state.data_apps.data_obj[d.root] = d.data;
-
-                    state.data_apps.base.forEach(function (app, appID) {
-
+                    da.base.forEach(function (app, appID) {
                         if (app.app_id === d.root) {
                             app.init = true;
                             app = Object.assign(app, d.data);
                         };
-
                     });
 
                     if (d.data.loaded === true) {
-                        state.data_apps.data_init_array.push(d.root);
+                        da.data_init_array.push(d.root);
                     } else {
-                        state.data_apps.data_loaded_array.push(d.root);
-                        state.data_apps.count = state.data_apps.count + 1;
+                        da.data_loaded_array.push(d.root);
+                        da.count = state.data_apps.count + 1;
                     };
 
-                    console.warn('state :: ', new Date(), state);
+                    // https://vuex.vuejs.org/guide/mutations.html#mutations-follow-vue-s-reactivity-rules
+                    // Vue.set(da, state.data_apps);
+                    // state.data_apps = { ...state.data_apps, da };
+                    state.data_apps = Object.assign({}, da);
+
+                    // console.warn('state :: ', new Date(), state);
                 } catch (err) {
                     console.error('Error: saveAppData', err);
                 };
@@ -3284,13 +3486,13 @@ new Vue({
 
                                             current_event.data.id = current_event.id;
                                             return_obj.event = current_event.data;
+                                            return_obj.event.extras = createEventExtras(current_event.data);
                                             return_obj.patient_uses_module_id = current_event.data.patient_uses_module_id;
                                             return_obj.patient_id = current_event.data.patient_id;
                                             return_obj.app_id = current_event.data.module;
                                             app_id = return_obj.app_id;
                                         };
                                     });
-
 
                                     if (return_obj.event_found) {
                                         resp.patients.forEach(function (current_patient, patientID) {
@@ -3706,6 +3908,63 @@ new Vue({
                 });
 
             },
+            getPatientStays({
+                commit
+            }) {
+
+                const api_url = '/patients/' + helpers.getPatientID() + '/stays/';
+                var parameters = {}
+
+                // Do async task
+                helpers.callAPI('GET', api_url, parameters, {}, function (req) {
+                    if (req.status == 200) {
+
+                        var resp = JSON.parse(req.response);
+                        var stays = resp.stays;
+
+                        var current_stay_id = parseInt(helpers.getStayID());
+
+                        var stay_response = {
+                            "all": stays,
+                            "current": {
+                                "id": current_stay_id,
+                                "data": null,
+                                "found": false
+                            }
+                        }
+
+                        stays.forEach(function (stay, stayID) {
+                            stay.data = createStayExtras(stay.data);
+                            stay.data.id = stay.id;
+                            stay.data.fid = stay.id;
+                            if (current_stay_id === stay.id) {
+                                stay_response.current.data = stay.data;
+                                stay_response.current.found = true;
+                            };
+                        });
+
+                        console.log('(✔) Data (' + api_url + '):', stay_response);
+
+                        commit({
+                            type: 'saveData',
+                            root: 'stays',
+                            data: stay_response
+                        });
+
+                    } else {
+                        var response = {
+                            "error": true,
+                            "api_url": api_url,
+                            "error_message": "Failed with status code: " + req.status,
+                            "status_code": req.status,
+                            "req": req
+                        };
+                        console.error('(!) Error: ', response);
+                    };
+
+                });
+
+            },
             getClinic({
                 commit
             }) {
@@ -3756,6 +4015,7 @@ new Vue({
     }),
     methods: {}
 });
+
 
 </script>
 
