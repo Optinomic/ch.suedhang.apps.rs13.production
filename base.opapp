@@ -34,7 +34,7 @@ host = default
 
 
 [survey_markup rs13_ng]
-__opapp_include(optinomic_lib/dist/survey_markup/rs13.html)
+__opapp_include(survey_markup/rs13.html)
 
 
 [event activation]
