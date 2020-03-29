@@ -2145,7 +2145,8 @@ Vue.component('app-optinomic', {
     created() {
         var params = {
             "identifier": helpers.getAppID(),
-            "root": helpers.getAppID()
+            "title": this.title,
+            "subtitle": this.subtitle
         };
         this.$store.dispatch('getSurveyResponses', params);
         this.$store.dispatch('getApps');
@@ -2597,6 +2598,10 @@ Vue.component('optinomic-content-block', {
             type: String,
             default: ""
         },
+        group: {
+            type: String,
+            default: ""
+        },
         id: {
             type: String,
             default: "id_undefined"
@@ -2889,7 +2894,12 @@ Vue.component('optinomic-clipboard-text', {
 
 // RS13-Application
 Vue.component('app-rs13', {
-    props: {},
+    props: {
+        identifier: {
+            type: String,
+            default: helpers.getAppID()
+        }
+    },
     created() {},
     data: function () {
         return {
@@ -3001,30 +3011,8 @@ Vue.component('app-rs13', {
         patient_secure() {
             try {
                 return this.$store.state.patient.data.extras.secure;
-
             } catch (e) {
                 return "";
-            };
-        },
-        sr_full() {
-            try {
-                return this.$store.state.data_apps.data_object[helpers.getAppID()];
-            } catch (e) {
-                return null;
-            };
-        },
-        sr_data() {
-            try {
-                return this.sr_full.data;
-            } catch (e) {
-                return [];
-            };
-        },
-        current_module() {
-            try {
-                return this.$store.state.current_app.module;
-            } catch (e) {
-                return null;
             };
         },
         sr_count_text() {
@@ -3050,7 +3038,7 @@ Vue.component('app-rs13', {
                     // Build PDF
                     var pdf = [];
                     pdf.push(this.pdf_app_info(this.current_module, true));
-                    pdf.push(this.rs13_pdf_content(this.sr_full));
+                    pdf.push(this.rs13_pdf_content(this.sr));
                     this.pdf_content = pdf;
                     return true;
                 } else {
@@ -3065,10 +3053,10 @@ Vue.component('app-rs13', {
         <div>
 
             <div v-if="!missings">
-                <optinomic-content-block v-if="sr_full" :title="base_config.app_short_description" subtitle="Übersicht | Grafik" id="rs13_chart">
+                <optinomic-content-block v-if="sr" :title="base_config.app_short_description" subtitle="Übersicht | Grafik" id="rs13_chart">
                     <optinomic-chart-profile v-bind:options="JSON.stringify(rs13_chart.options)"
                         v-bind:scales="JSON.stringify(rs13_chart.scales)" v-bind:ranges="JSON.stringify(rs13_chart.ranges)"
-                        v-bind:scores="JSON.stringify(sr_full)">
+                        v-bind:scores="JSON.stringify(sr)">
                     </optinomic-chart-profile>
                 </optinomic-content-block>
             </div>
@@ -3087,7 +3075,7 @@ Vue.component('app-rs13', {
             </div>
 
             <optinomic-content-block :subtitle="sr_count_text" title="Datentabelle" id="id_data_table">
-                <optinomic-data-table :rows="data_table.rows" :interpretations="data_table.interpretations">
+                <optinomic-data-table :rows="data_table.rows" :interpretations="data_table.interpretations" :sr="sr_data">
                 </optinomic-data-table>
             </optinomic-content-block>
 
@@ -3130,12 +3118,27 @@ const optinomic_globals = {
                 }
             },
             computed: {
+                sr() {
+                    try {
+                        return this.$store.state.data_apps.data_object[this.identifier];
+                    } catch (e) {
+                        return null;
+                    };
+                },
+                sr_data() {
+                    try {
+                        return this.sr.data;
+                    } catch (e) {
+                        return [];
+                    };
+                },
                 missings() {
                     try {
-                        if (this.$store.state.sr === null) {
+                        var d = this.$store.state.data_apps.data_object[this.identifier];
+                        if (d === null) {
                             return false;
                         } else {
-                            var sr = this.$store.state.sr.data;
+                            var sr = d.data;
                             var data_errors = false;
                             sr.forEach(function (item) {
                                 if (item.all_found === false) {
@@ -3147,7 +3150,14 @@ const optinomic_globals = {
                     } catch (e) {
                         return false;
                     };
-                }
+                },
+                current_module() {
+                    try {
+                        return this.$store.state.current_app.module;
+                    } catch (e) {
+                        return null;
+                    };
+                },
             }
         });
     }
@@ -3442,7 +3452,7 @@ new Vue({
                 var module_identifier = helpers.getAppID();
                 var current_pid = parseInt(helpers.getPatientID());
                 var current_stay_id = parseInt(helpers.getStayID());;
-                var store_root = 'sr';
+                var store_root = module_identifier;
 
                 try {
                     if (is_defined(params.identifier)) {
@@ -3475,7 +3485,8 @@ new Vue({
                     "request": null,
                     "pid": current_pid,
                     "fid": current_stay_id,
-                    "app_id": module_identifier
+                    "app_id": module_identifier,
+                    "params": params
                 };
 
                 console.log('(?) getSurveyResponses', module_identifier, current_pid, current_stay_id, store_root);
@@ -3712,7 +3723,8 @@ new Vue({
                                     "request": data_request,
                                     "pid": current_pid,
                                     "fid": current_stay_id,
-                                    "app_id": app_id
+                                    "app_id": app_id,
+                                    "params": params
                                 };
                                 console.log('(✔) Data (' + api_url + '):', response);
 
