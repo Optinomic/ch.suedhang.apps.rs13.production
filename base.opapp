@@ -28,7 +28,7 @@ __opapp_include(README.md)
 [survey]
 id = rs13_ng
 type = ng
-responsibility = lead_therapist
+responsibility = patient_via_assessment
 name = Resilienzfragebogen (RS-13)
 host = default
 
